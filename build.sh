@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 set -euo pipefail
 
 cmake -S . -B build -G "Visual Studio 18 2026" -A x64

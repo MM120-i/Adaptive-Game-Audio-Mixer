@@ -1,0 +1,16 @@
+Writing cmds down cuz i forget
+
+Need git bash for this:
+
+./build.sh    -> configure + compile
+./run.sh      -> launch the app
+./test.sh     -> run tests
+./clean.sh    -> clean build
+
+
+Keyboard shortcuts:
+
+Ctrl+Shift+B    -> Build (Debug) -> auto-runs CMake configure first
+Ctrl+Shift+P    -> Run Task -> Run Build then launch AudioMixer.exe
+Ctrl+Shift+P    -> Run Task -> Test	Run ctest
+Ctrl+Shift+P    -> Run Task -> Clean	Delete build/
