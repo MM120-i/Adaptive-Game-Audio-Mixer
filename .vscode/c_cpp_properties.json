@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/third_party/JUCE/modules",
+        "${workspaceFolder}/build/AudioMixer_artefacts/JuceLibraryCode"
+      ],
+      "defines": [
+        "AUDIO_MIXER_VERSION=\"0.1.0\"",
+        "JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1"
+      ],
+      "windowsSdkVersion": "10.0.26100.0",
+      "compilerPath": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36218/bin/Hostx64/x64/cl.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++20",
+      "intelliSenseMode": "windows-msvc-x64"
+    }
+  ],
+  "version": 4
+}
