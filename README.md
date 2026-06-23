@@ -1,6 +1,6 @@
 # AudioMixer — Adaptive Game Music System
 
-A Windows desktop app that dynamically blends your Spotify music with game audio — giving the impression your playlist is part of the game.
+A Windows desktop app that dynamically blends your Spotify music with game audio, giving the impression your playlist is part of the game.
 
 ## Motivation
 
