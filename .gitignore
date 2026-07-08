@@ -6,4 +6,4 @@ CMakeUserPresets.json
 *.suo
 *.log
 
-*.md
+*.txt
