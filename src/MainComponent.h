@@ -8,29 +8,29 @@
 
 class MainComponent final : public juce::Component {
 public:
-    MainComponent (AppSettings& settings, const SettingsStore& settingsStore, AppLogger& logger);
+    MainComponent (AppSettings &, const SettingsStore &, AppLogger &);
     ~MainComponent() override;
 
-    void paint (juce::Graphics& graphics) override;
+    void paint (juce::Graphics &) override;
     void resized() override;
-    void appendDiagnosticsMessage (const juce::String& message);
+    void appendDiagnosticsMessage(const juce::String &);
 
 private:
     void saveSettingsFromUi();
     void reloadSettingsIntoUi();
     void refreshSettingsSummary();
 
-    AppSettings& settings;
-    const SettingsStore& settingsStore;
-    AppLogger& logger;
+    AppSettings &settings;
+    const SettingsStore &settingsStore;
+    AppLogger &logger;
 
     juce::Label titleLabel;
     juce::Label versionLabel;
     juce::Label settingsSummaryLabel;
     juce::ToggleButton verboseDiagnosticsToggle;
-    juce::TextButton saveSettingsButton { "Save Settings" };
-    juce::TextButton reloadSettingsButton { "Reload Settings" };
+    juce::TextButton saveSettingsButton{ "Save Settings" };
+    juce::TextButton reloadSettingsButton{ "Reload Settings" };
     juce::TextEditor diagnosticsEditor;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };
