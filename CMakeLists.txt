@@ -24,12 +24,17 @@ target_sources(AudioMixer
         src/SettingsStore.cpp
         src/SettingsStore.h
         src/AppLogger.cpp
-        src/AppLogger.h)
+        src/AppLogger.h
+        src/AudioCaptureEngine.cpp
+        src/AudioCaptureEngine.h
+        src/LevelMeter.cpp
+        src/LevelMeter.h)
 
 target_link_libraries(AudioMixer
     PRIVATE
         juce::juce_gui_extra
-        juce::juce_data_structures)
+        juce::juce_data_structures
+        juce::juce_audio_devices)
 
 target_compile_definitions(AudioMixer
     PRIVATE

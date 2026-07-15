@@ -5,7 +5,7 @@ namespace {
     constexpr int controlHeight = 30;
 }
 
-MainComponent::MainComponent (AppSettings &appSettings, const SettingsStore &store, AppLogger &appLogger): 
+MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &store, AppLogger &appLogger): 
     settings(appSettings),
     settingsStore(store),
     logger(appLogger)
@@ -44,6 +44,8 @@ MainComponent::MainComponent (AppSettings &appSettings, const SettingsStore &sto
 
     addAndMakeVisible (reloadSettingsButton);
 
+    deviceInfoLabel.setJustificationType(juce::Justification::centredLeft);
+
     diagnosticsEditor.setMultiLine(true);
     diagnosticsEditor.setReadOnly(true);
     diagnosticsEditor.setScrollbarsShown(true);
@@ -51,7 +53,36 @@ MainComponent::MainComponent (AppSettings &appSettings, const SettingsStore &sto
     diagnosticsEditor.setPopupMenuEnabled(true);
     diagnosticsEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour{ 0xff101418 });
     diagnosticsEditor.setColour(juce::TextEditor::textColourId, juce::Colour{ 0xffd6e2ea });
+    
     addAndMakeVisible(diagnosticsEditor);
+    addAndMakeVisible(deviceInfoLabel);
+    addAndMakeVisible(sampleRateLabel);
+    addAndMakeVisible(channelsLabel);;
+    addAndMakeVisible(bufferLabel);
+
+    startCaptureButton.onClick = [this]{
+        if(captureEngine.isCapturing()){
+            captureEngine.stopCapture();
+            startCaptureButton.setButtonText("Start Capture");
+            logger.info("Capture stopped");
+        }
+        else{
+            auto errorMessage = juce::String();
+
+            if(captureEngine.startCapture(errorMessage)){
+                startCaptureButton.setButtonText("Stop Capture");
+                logger.info("Capture started on: " + captureEngine.getDeviceName());
+            }
+            else{
+                logger.error("Capture failed: " + errorMessage);
+            }
+        }
+    };
+
+    addAndMakeVisible(startCaptureButton);
+    addAndMakeVisible(levelMeter);
+
+    startTimer(20);
 
     refreshSettingsSummary();
     logger.info("UI created.");
@@ -82,6 +113,33 @@ void MainComponent::resized() {
 
     bounds.removeFromTop(14);
     diagnosticsEditor.setBounds(bounds);
+
+    bounds.removeFromTop(4);
+    startCaptureButton.setBounds(bounds.removeFromTop(controlHeight).removeFromLeft(150));
+    bounds.removeFromTop(8);
+
+    auto infoRow = bounds.removeFromTop(controlHeight);
+    deviceInfoLabel.setBounds(infoRow.removeFromLeft(350));
+    sampleRateLabel.setBounds(infoRow.removeFromLeft(120));
+    channelsLabel.setBounds(infoRow.removeFromLeft(100));
+    bufferLabel.setBounds(infoRow);
+
+    bounds.removeFromTop(8);
+    levelMeter.setBounds(bounds.removeFromTop(22));
+}
+
+void MainComponent::timerCallback() {
+    if(captureEngine.isCapturing()){
+        levelMeter.setLevel(captureEngine.getCurrentLevel());
+        updateDeviceInfo();
+    }
+}
+
+void MainComponent::updateDeviceInfo(){
+    deviceInfoLabel.setText("Device: " + captureEngine.getDeviceName(), juce::dontSendNotification);
+    sampleRateLabel.setText("Rate: " + juce::String(captureEngine.getSampleRate()) + " Hz", juce::dontSendNotification);
+    channelsLabel.setText("Ch: " + juce::String(captureEngine.getChannelCount()), juce::dontSendNotification);
+    bufferLabel.setText("Buf: " + juce::String(captureEngine.getBufferSize()) + " samples", juce::dontSendNotification);
 }
 
 void MainComponent::appendDiagnosticsMessage(const juce::String &message) {
