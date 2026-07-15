@@ -3,8 +3,8 @@
 #include <juce_core/juce_core.h>
 
 struct AppSettings{
-    int windowWidth{ 900 };
-    int windowHeight{ 560 };
+    int windowWidth{ 2000 };
+    int windowHeight{ 2000 };
     bool verboseDiagnostics{ true };
 
     juce::String lastLaunchTimestamp;

@@ -17,18 +17,23 @@ juce_add_gui_app(AudioMixer
 target_sources(AudioMixer
     PRIVATE
         src/Main.cpp
-        src/MainComponent.cpp
-        src/MainComponent.h
-        src/AppSettings.cpp
-        src/AppSettings.h
-        src/SettingsStore.cpp
-        src/SettingsStore.h
-        src/AppLogger.cpp
-        src/AppLogger.h
-        src/AudioCaptureEngine.cpp
-        src/AudioCaptureEngine.h
-        src/LevelMeter.cpp
-        src/LevelMeter.h)
+        src/ui/MainComponent.cpp
+        src/ui/MainComponent.h
+        src/ui/LevelMeter.cpp
+        src/ui/LevelMeter.h
+        src/ui/MixerLookAndFeel.h
+        src/audio/AudioCaptureEngine.cpp
+        src/audio/AudioCaptureEngine.h
+        src/core/AppSettings.cpp
+        src/core/AppSettings.h
+        src/core/SettingsStore.cpp
+        src/core/SettingsStore.h
+        src/core/AppLogger.cpp
+        src/core/AppLogger.h)
+
+target_include_directories(AudioMixer
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_link_libraries(AudioMixer
     PRIVATE

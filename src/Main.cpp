@@ -1,7 +1,8 @@
-#include "AppLogger.h"
-#include "AppSettings.h"
-#include "MainComponent.h"
-#include "SettingsStore.h"
+#include "core/AppLogger.h"
+#include "core/AppSettings.h"
+#include "ui/MainComponent.h"
+#include "ui/MixerLookAndFeel.h"
+#include "core/SettingsStore.h"
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
@@ -38,9 +39,11 @@ public:
         if (loadResult.createdDefaults)
             saveSettings("default settings creation");
 
+        lookAndFeel = std::make_unique<MixerLookAndFeel>();
+        juce::LookAndFeel::setDefaultLookAndFeel(lookAndFeel.get());
         mainWindow = std::make_unique<MainWindow>(getApplicationName(), settings, settingsStore, *logger);
 
-        logger->setDiagnosticsSink([this](const juce::String& message){
+        logger->setDiagnosticsSink([this](const juce::String &message){
             if (mainWindow != nullptr)
                 mainWindow->appendDiagnosticsMessage(message);
         });
@@ -53,6 +56,7 @@ public:
             logger->info("Shutdown.");
 
         mainWindow = nullptr;
+        lookAndFeel = nullptr;
         logger = nullptr;
     }
 
@@ -128,6 +132,7 @@ private:
     SettingsStore settingsStore;
     AppSettings settings;
     std::unique_ptr<AppLogger> logger;
+    std::unique_ptr<MixerLookAndFeel> lookAndFeel;
     std::unique_ptr<MainWindow> mainWindow;
 };
 
