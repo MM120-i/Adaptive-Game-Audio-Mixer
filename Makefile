@@ -11,7 +11,7 @@ all: build
 
 build:
 	cmake -S . -B $(BUILD_DIR) -G $(GENERATOR) -A $(ARCH)
-	cmake --build $(BUILD_DIR) --config Debug
+	cmake --build $(BUILD_DIR) --config Debug --parallel
 
 release:
 	cmake -S . -B $(BUILD_DIR) -G $(GENERATOR) -A $(ARCH)

@@ -6,6 +6,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(MSVC)
+    add_compile_options(/MP)
+endif()
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_gui_app(AudioMixer
@@ -39,7 +43,7 @@ target_link_libraries(AudioMixer
     PRIVATE
         juce::juce_gui_extra
         juce::juce_data_structures
-        juce::juce_audio_devices)
+        ole32)
 
 target_compile_definitions(AudioMixer
     PRIVATE

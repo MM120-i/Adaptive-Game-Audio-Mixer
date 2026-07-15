@@ -1,46 +1,39 @@
 #pragma once
 
-#include <juce_audio_devices/juce_audio_devices.h>
+#include <juce_core/juce_core.h>
+#include <atomic>
+#include <functional>
+#include <thread>
 
-class AudioCaptureEngine : private juce::AudioIODeviceCallback
+class AudioCaptureEngine
 {
 public:
     AudioCaptureEngine();
     ~AudioCaptureEngine();
 
-    bool startCapture (juce::String &);
+    bool startCapture (juce::String& errorMessage);
     void stopCapture();
     bool isCapturing() const;
 
-    juce::String getDeviceName() const;
-
-    juce::String getDeviceDiagnostics() const { 
-        return deviceManagerLog; 
-    }
-
-    int getSampleRate() const;
-    int getChannelCount() const;
-    int getBufferSize() const;
-
-    float getCurrentLevel() const;
+    juce::String getDeviceName()      const { return deviceName; }
+    juce::String getDeviceDiagnostics() const { return diagLog; }
+    int  getSampleRate()              const { return sampleRate.load(); }
+    int  getChannelCount()            const { return channelCount.load(); }
+    int  getBufferSize()              const { return bufferSize.load(); }
+    float getCurrentLevel()           const { return currentLevel.load(); }
 
 private:
-    void audioDeviceIOCallbackWithContext(const float* const*, int, float* const*, int, int, const juce::AudioIODeviceCallbackContext &) override;
-    void audioDeviceAboutToStart(juce::AudioIODevice *) override;
-    void audioDeviceStopped() override;
-
-    juce::AudioDeviceManager deviceManager;
-
-    std::atomic<float> currentLevel{ 0.0f };
-    std::atomic<int> sampleRate{ 0 };
-    std::atomic<int> channelCount{ 0 };
-    std::atomic<int> bufferSize{ 0 };
-    std::atomic<bool> capturing{ false };
+    std::atomic<float> currentLevel  { 0.0f };
+    std::atomic<int>   sampleRate    { 0 };
+    std::atomic<int>   channelCount  { 0 };
+    std::atomic<int>   bufferSize    { 0 };
+    std::atomic<bool>  capturing     { false };
 
     juce::String deviceName;
-    juce::String deviceManagerLog;  
+    juce::String diagLog;
+    float        smoothedLevel { 0.0f };
 
-    float smoothedLevel{ 0.0f };
+    std::thread captureThread;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioCaptureEngine)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioCaptureEngine)
 };

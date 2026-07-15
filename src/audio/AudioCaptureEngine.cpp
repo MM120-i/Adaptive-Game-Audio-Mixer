@@ -1,176 +1,231 @@
-#include <cmath>
 #include "AudioCaptureEngine.h"
 
-AudioCaptureEngine::AudioCaptureEngine(){}
+#define WIN32_LEAN_AND_MEAN
 
-AudioCaptureEngine::~AudioCaptureEngine() {
-    stopCapture();
-}
+#include <windows.h>
+#include <mmdeviceapi.h>
+#include <audioclient.h>
+#include <functiondiscoverykeys_devpkey.h>
+#include <combaseapi.h>
 
-static juce::AudioIODeviceType *findWASAPI(juce::AudioDeviceManager &dm) {
-    for(auto *type : dm.getAvailableDeviceTypes()){
-        const auto n = type->getTypeName();
+#include <cmath>
 
-        if (n.containsIgnoreCase("Windows Audio") || n.containsIgnoreCase("WASAPI"))
-            return type;
+namespace {
+    juce::String hrDesc(HRESULT hr){
+        return "0x" + juce::String::toHexString(static_cast<int>(hr));
     }
 
-    return nullptr;
+    struct ComPtr {
+        void *p = nullptr;
+
+        ~ComPtr() { 
+            if(p) { 
+                reinterpret_cast<IUnknown *>(p)->Release(); 
+                p = nullptr; 
+            } 
+        }
+
+        void **addr() { 
+            return &p; 
+        }
+
+        template <typename T> T *as() const { 
+            return reinterpret_cast<T *>(p); 
+        }
+    };
+
+    struct HandlePtr{
+        HANDLE h = nullptr;
+
+        ~HandlePtr() { 
+            close(); 
+        }
+
+        void close() { 
+            if (h) { 
+                CloseHandle(h); 
+                h = nullptr; 
+            } 
+        }
+    };
+
+    struct TaskMemPtr{
+        void* p = nullptr;
+
+        ~TaskMemPtr() { 
+            if(p) { 
+                CoTaskMemFree(p); 
+                p = nullptr; 
+            } 
+        }
+    };
+}
+
+AudioCaptureEngine::AudioCaptureEngine()  = default;
+
+AudioCaptureEngine::~AudioCaptureEngine() { 
+    stopCapture(); 
 }
 
 bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
-    auto *wasapiType = findWASAPI(deviceManager);
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
-    if (wasapiType == nullptr){
-        errorMessage = "WASAPI audio backend not available.";
+    ComPtr mmdev;
+    HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), mmdev.addr());
+
+    if (FAILED(hr)){
+        errorMessage = "Failed to create MMDeviceEnumerator.";
+        CoUninitialize();
         return false;
     }
 
-    deviceManager.setCurrentAudioDeviceType(wasapiType->getTypeName(), true);
-    wasapiType->scanForDevices();
+    ComPtr endpoint;
 
-    const auto inputDevices = wasapiType->getDeviceNames(true);  
-    const auto outputDevices = wasapiType->getDeviceNames(false);  
+    hr = reinterpret_cast<IMMDeviceEnumerator *>(mmdev.p)->GetDefaultAudioEndpoint(eRender, eConsole, reinterpret_cast<IMMDevice **>(endpoint.addr()));
+    mmdev = {}; 
 
-    deviceManagerLog  = "WASAPI outputs (" + juce::String (outputDevices.size()) + "): ";
+    if(FAILED(hr)){
+        errorMessage = "No active playback device. Connect speakers/headphones.";
+        CoUninitialize();
+        return false;
+    }
 
-    for(size_t i = 0; i < outputDevices.size(); ++i)
-        deviceManagerLog += "\n  [" + juce::String(i) + "] " + outputDevices[i];
+    ComPtr props;
+    auto *dev = reinterpret_cast<IMMDevice *>(endpoint.p);
 
-    deviceManagerLog += "\nWASAPI inputs (" + juce::String (inputDevices.size()) + "): ";
+    if(SUCCEEDED(dev->OpenPropertyStore(STGM_READ, reinterpret_cast<IPropertyStore **>(props.addr())))){
+        PROPVARIANT nameVar;
+        PropVariantInit(&nameVar);
 
-    for (size_t i = 0; i < inputDevices.size(); ++i)
-        deviceManagerLog += "\n  [" + juce::String (i) + "] " + inputDevices[i];
+        if(SUCCEEDED(reinterpret_cast<IPropertyStore *>(props.p)->GetValue(PKEY_Device_FriendlyName, &nameVar)))
+            deviceName = nameVar.pwszVal;
 
-    juce::String loopbackName;
-    int priority = 4;
+        PropVariantClear(&nameVar);
+    }
 
-    for(size_t ni = 0; ni < inputDevices.size(); ++ni){
-        const auto& in = inputDevices[ni];
+    props = {}; 
+    ComPtr client;
+    hr = dev->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, reinterpret_cast<void **>(client.addr()));
 
-        for(size_t no = 0; no < outputDevices.size(); ++no){
-            if (in == outputDevices[no] && priority > 1){
-                loopbackName = in;
-                priority = 1;
-                break;
+    if (FAILED(hr)){
+        errorMessage = "Failed to activate IAudioClient.";
+        CoUninitialize();
+        return false;
+    }
+
+    auto *audio = reinterpret_cast<IAudioClient *>(client.p);
+    TaskMemPtr wfxOwn;
+    WAVEFORMATEX* wfx = nullptr;
+    hr = audio->GetMixFormat(&wfx);
+    wfxOwn.p = wfx;
+
+    if(FAILED(hr)){
+        errorMessage = "Failed to get mix format.";
+        CoUninitialize();
+        return false;
+    }
+
+    sampleRate = static_cast<int>(wfx->nSamplesPerSec);
+    channelCount = static_cast<int>(wfx->nChannels);
+
+    diagLog = "Device: " + deviceName
+            + "\n  Sample rate: " + juce::String(sampleRate.load()) + " Hz"
+            + "\n  Channels: " + juce::String(channelCount.load())
+            + "\n  Bit depth: " + juce::String(wfx->wBitsPerSample);
+
+    hr = audio->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, 0, 0, wfx, nullptr);
+    wfxOwn = {}; 
+
+    if (FAILED (hr)){
+        errorMessage = "WASAPI loopback not available. (" + hrDesc(hr) + ")";
+        CoUninitialize();
+        return false;
+    }
+
+    ComPtr capture;
+    hr = audio->GetService(__uuidof(IAudioCaptureClient), reinterpret_cast<void **>(capture.addr()));
+    
+    if (FAILED(hr)){
+        errorMessage = "Failed to get IAudioCaptureClient.";
+        CoUninitialize();
+        return false;
+    }
+
+    UINT32 bufFrames = 0;
+    audio->GetBufferSize(&bufFrames);
+    bufferSize = static_cast<int>(bufFrames);
+    audio->Start();
+    endpoint = {};
+
+    auto *capRaw = reinterpret_cast<IAudioCaptureClient *>(capture.p);
+    auto *cliRaw = audio;
+    capture.p = nullptr;
+    client.p  = nullptr;
+
+    auto loop = [this] (IAudioCaptureClient *cap, IAudioClient *cli) {
+        CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
+        while(capturing.load(std::memory_order_relaxed)){
+            Sleep(10); 
+
+            while(true){
+                BYTE *data = nullptr;
+                UINT32 frm = 0;
+                DWORD flags = 0;
+                HRESULT r = cap->GetBuffer(&data, &frm, &flags, nullptr, nullptr);
+
+                if (r == AUDCLNT_S_BUFFER_EMPTY || FAILED(r))
+                    break;
+
+                if (flags & AUDCLNT_BUFFERFLAGS_SILENT){
+                    currentLevel.store(0.0f, std::memory_order_relaxed);
+                }
+                else if(frm > 0 && data != nullptr){
+                    const auto *samples = reinterpret_cast<const float *>(data);
+                    const int chs = channelCount.load();
+                    float sum = 0.0f;
+
+                    for (UINT32 i = 0; i < frm; ++i){
+                        float mono = 0.0f;
+
+                        for (size_t c = 0; c < chs; ++c)
+                            mono += samples[i * chs + c];
+
+                        mono /= static_cast<float>(chs);
+                        sum += mono * mono;
+                    }
+
+                    const float rms = std::sqrt(sum / static_cast<float>(frm));
+                    constexpr float alpha = 0.3f;
+                    smoothedLevel = (alpha * rms) + ((1.0f - alpha) * smoothedLevel);
+                    currentLevel.store(smoothedLevel, std::memory_order_relaxed);
+                }
+
+                cap->ReleaseBuffer(frm);
             }
         }
 
-        if (priority > 2){
-            const auto lower = in.toLowerCase();
+        cli->Stop();
+        cli->Release();
+        cap->Release();
+        CoUninitialize();
+    };
 
-            if (lower.contains("loopback") || 
-                lower.contains("stereo mix") || 
-                lower.contains("what u hear") || 
-                lower.contains("wave out"))
-            {
-                loopbackName = in;
-                priority = 2;
-            }
-        }
-
-        if (priority > 3){
-            loopbackName = in;
-            priority = 3;
-        }
-    }
-
-    if (loopbackName.isEmpty()){
-        errorMessage = "No suitable input device found." + deviceManagerLog;
-        return false;
-    }
-
-    deviceName = loopbackName;
-    deviceManagerLog += "\n\nSelected: " + deviceName + " (priority=" + juce::String(priority) + ")";
-
-    juce::AudioDeviceManager::AudioDeviceSetup setup;
-    setup.inputDeviceName = deviceName;
-    setup.outputDeviceName.clear();
-    setup.useDefaultInputChannels = true;
-    setup.useDefaultOutputChannels = false;
-    setup.sampleRate = 0;
-    setup.bufferSize = 0;
-
-    const auto result = deviceManager.setAudioDeviceSetup(setup, true);
-
-    if (result.isNotEmpty()){
-        deviceManager.closeAudioDevice();
-        errorMessage = result + deviceManagerLog;
-        return false;
-    }
-
-    deviceManager.addAudioCallback(this);
     capturing = true;
+    captureThread = std::thread(loop, capRaw, cliRaw);
+
     return true;
 }
 
 void AudioCaptureEngine::stopCapture(){
-    deviceManager.removeAudioCallback(this);
-    deviceManager.closeAudioDevice();
     capturing = false;
+
+    if (captureThread.joinable())
+        captureThread.join();
+
     currentLevel = 0.0f;
 }
 
 bool AudioCaptureEngine::isCapturing() const { 
     return capturing.load(); 
-}
-
-juce::String AudioCaptureEngine::getDeviceName() const { 
-    return deviceName; 
-}
-
-int AudioCaptureEngine::getSampleRate() const { 
-    return sampleRate.load(); 
-}
-
-int AudioCaptureEngine::getChannelCount() const { 
-    return channelCount.load(); 
-}
-
-int AudioCaptureEngine::getBufferSize() const { 
-    return bufferSize.load(); 
-}
-
-float AudioCaptureEngine::getCurrentLevel() const { 
-    return currentLevel.load(); 
-}
-
-//  AUDIO THREAD — fast, no blocking, no allocations
-void AudioCaptureEngine::audioDeviceIOCallbackWithContext(const float * const *inputChannelData,
-                                                          int numInputChannels,
-                                                          float* const* /*outputChannelData*/,
-                                                          int /*numOutputChannels*/,
-                                                          int numSamples,
-                                                          const juce::AudioIODeviceCallbackContext & /*context*/)
-{
-    if (numInputChannels == 0)
-        return;
-
-    float sum = 0.0f;
-
-    for(size_t sample = 0; sample < numSamples; ++sample){
-        float mono = 0.0f;
-
-        for(size_t ch = 0; ch < numInputChannels; ++ch)
-            mono += inputChannelData[ch][sample];
-
-        mono /= static_cast<float>(numInputChannels);
-        sum += mono * mono;
-    }
-
-    const float rms = std::sqrt(sum / static_cast<float>(numSamples));
-    constexpr float alpha = 0.3f;
-    smoothedLevel = (alpha * rms) + ((1.0f - alpha) * smoothedLevel);
-    currentLevel.store(smoothedLevel, std::memory_order_relaxed);
-}
-
-void AudioCaptureEngine::audioDeviceAboutToStart(juce::AudioIODevice *device){
-    sampleRate = device->getCurrentSampleRate();
-    channelCount = device->getActiveInputChannels().countNumberOfSetBits();
-    bufferSize = device->getCurrentBufferSizeSamples();
-}
-
-void AudioCaptureEngine::audioDeviceStopped(){
-    currentLevel = 0.0f;
-    smoothedLevel = 0.0f;
 }
