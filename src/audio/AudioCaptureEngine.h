@@ -15,10 +15,13 @@ private:
 
     juce::String deviceName;
     juce::String diagLog;
+    juce::String captureError;   
 
     float smoothedLevel{ 0.0f };
 
     std::thread captureThread;
+    void *pendingClient{ nullptr }; 
+    void *pendingCapture{ nullptr }; 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioCaptureEngine)
 
@@ -34,8 +37,12 @@ public:
         return deviceName; 
     }
 
-    juce::String getDeviceDiagnostics() const { 
-        return diagLog; 
+    juce::String getDeviceDiagnostics() const {
+        return diagLog;
+    }
+
+    juce::String getCaptureError() const {
+        return captureError;
     }
 
     int getSampleRate() const { 

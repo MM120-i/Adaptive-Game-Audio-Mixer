@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
+#include <ksmedia.h>
 #include <functiondiscoverykeys_devpkey.h>
 #include <combaseapi.h>
 
@@ -15,14 +16,34 @@ namespace {
         return "0x" + juce::String::toHexString(static_cast<int>(hr));
     }
 
+    bool isFloatFormat(const WAVEFORMATEX *wfx){
+        if (wfx->wFormatTag == WAVE_FORMAT_IEEE_FLOAT)
+            return true;
+
+        if (wfx->wFormatTag == WAVE_FORMAT_EXTENSIBLE && wfx->cbSize >= 22){
+            const auto *wfxe = reinterpret_cast<const WAVEFORMATEXTENSIBLE *>(wfx);
+            return wfxe->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+        }
+
+        return false;
+    }
+
     struct ComPtr {
-        void *p = nullptr;
+        void* p = nullptr;
+
+        ComPtr() = default;
+        ComPtr(const ComPtr &) = delete;
+        ComPtr &operator=(const ComPtr &) = delete;
 
         ~ComPtr() { 
-            if(p) { 
-                reinterpret_cast<IUnknown *>(p)->Release(); 
-                p = nullptr; 
-            } 
+            reset(); 
+        }
+
+        void reset() {
+            if (p) {
+                reinterpret_cast<IUnknown *>(p)->Release();
+                p = nullptr;
+            }
         }
 
         void **addr() { 
@@ -34,29 +55,22 @@ namespace {
         }
     };
 
-    struct HandlePtr{
-        HANDLE h = nullptr;
-
-        ~HandlePtr() { 
-            close(); 
-        }
-
-        void close() { 
-            if (h) { 
-                CloseHandle(h); 
-                h = nullptr; 
-            } 
-        }
-    };
-
     struct TaskMemPtr{
-        void* p = nullptr;
+        void *p = nullptr;
+
+        TaskMemPtr() = default;
+        TaskMemPtr(const TaskMemPtr &) = delete;
+        TaskMemPtr &operator=(const TaskMemPtr &) = delete;
 
         ~TaskMemPtr() { 
-            if(p) { 
-                CoTaskMemFree(p); 
-                p = nullptr; 
-            } 
+            reset(); 
+        }
+
+        void reset() {
+            if (p) {
+                CoTaskMemFree(p);
+                p = nullptr;
+            }
         }
     };
 }
@@ -68,25 +82,31 @@ AudioCaptureEngine::~AudioCaptureEngine() {
 }
 
 bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
-    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    const HRESULT coInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    const bool weInitedCom = SUCCEEDED(coInit) && coInit != RPC_E_CHANGED_MODE;
 
     ComPtr mmdev;
     HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), mmdev.addr());
 
     if (FAILED(hr)){
         errorMessage = "Failed to create MMDeviceEnumerator.";
-        CoUninitialize();
+
+        if(weInitedCom) 
+            CoUninitialize();
+
         return false;
     }
 
     ComPtr endpoint;
-
     hr = reinterpret_cast<IMMDeviceEnumerator *>(mmdev.p)->GetDefaultAudioEndpoint(eRender, eConsole, reinterpret_cast<IMMDevice **>(endpoint.addr()));
-    mmdev = {}; 
+    mmdev.reset(); 
 
     if(FAILED(hr)){
         errorMessage = "No active playback device. Connect speakers/headphones.";
-        CoUninitialize();
+
+        if(weInitedCom) 
+            CoUninitialize();
+
         return false;
     }
 
@@ -103,25 +123,31 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
         PropVariantClear(&nameVar);
     }
 
-    props = {}; 
+    props.reset(); 
     ComPtr client;
     hr = dev->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, reinterpret_cast<void **>(client.addr()));
 
     if (FAILED(hr)){
         errorMessage = "Failed to activate IAudioClient.";
-        CoUninitialize();
+
+        if(weInitedCom) 
+            CoUninitialize();
+
         return false;
     }
 
     auto *audio = reinterpret_cast<IAudioClient *>(client.p);
     TaskMemPtr wfxOwn;
-    WAVEFORMATEX* wfx = nullptr;
+    WAVEFORMATEX *wfx = nullptr;
     hr = audio->GetMixFormat(&wfx);
     wfxOwn.p = wfx;
 
     if(FAILED(hr)){
         errorMessage = "Failed to get mix format.";
-        CoUninitialize();
+
+        if(weInitedCom)
+            CoUninitialize();
+
         return false;
     }
 
@@ -131,14 +157,27 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
     diagLog = "Device: " + deviceName
             + "\n  Sample rate: " + juce::String(sampleRate.load()) + " Hz"
             + "\n  Channels: " + juce::String(channelCount.load())
-            + "\n  Bit depth: " + juce::String(wfx->wBitsPerSample);
+            + "\n  Bit depth: " + juce::String(wfx->wBitsPerSample)
+            + "\n  Format: " + (isFloatFormat(wfx) ? "IEEE float" : "PCM");
+
+    if (!isFloatFormat(wfx)){
+        errorMessage = "Unsupported audio format. WASAPI loopback must be IEEE float.";
+
+        if(weInitedCom)
+            CoUninitialize();
+
+        return false;
+    }
 
     hr = audio->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, 0, 0, wfx, nullptr);
-    wfxOwn = {}; 
+    wfxOwn.reset(); 
 
     if (FAILED (hr)){
         errorMessage = "WASAPI loopback not available. (" + hrDesc(hr) + ")";
-        CoUninitialize();
+        
+        if(weInitedCom) 
+            CoUninitialize();
+
         return false;
     }
 
@@ -147,15 +186,38 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
     
     if (FAILED(hr)){
         errorMessage = "Failed to get IAudioCaptureClient.";
-        CoUninitialize();
+        
+        if(weInitedCom)
+            CoUninitialize();
+
         return false;
     }
 
     UINT32 bufFrames = 0;
-    audio->GetBufferSize(&bufFrames);
+    hr = audio->GetBufferSize(&bufFrames);
+
+    if (FAILED(hr)){
+        errorMessage = "GetBufferSize failed. (" + hrDesc(hr) + ")";
+        
+        if(weInitedCom)
+            CoUninitialize();
+
+        return false;
+    }
+
     bufferSize = static_cast<int>(bufFrames);
-    audio->Start();
-    endpoint = {};
+    hr = audio->Start();
+
+    if (FAILED(hr)){
+        errorMessage = "Start failed. (" + hrDesc(hr) + ")";
+        
+        if(weInitedCom)
+            CoUninitialize();
+
+        return false;
+    }
+
+    endpoint.reset();
 
     auto *capRaw = reinterpret_cast<IAudioCaptureClient *>(capture.p);
     auto *cliRaw = audio;
@@ -174,8 +236,14 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
                 DWORD flags = 0;
                 HRESULT r = cap->GetBuffer(&data, &frm, &flags, nullptr, nullptr);
 
-                if (r == AUDCLNT_S_BUFFER_EMPTY || FAILED(r))
+                if (r == AUDCLNT_S_BUFFER_EMPTY)
                     break;
+
+                if (FAILED(r)){
+                    captureError = "Capture device error: " + hrDesc(r);
+                    capturing.store(false, std::memory_order_relaxed);
+                    break;
+                }
 
                 if (flags & AUDCLNT_BUFFERFLAGS_SILENT){
                     currentLevel.store(0.0f, std::memory_order_relaxed);
@@ -206,8 +274,8 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
         }
 
         cli->Stop();
-        cli->Release();
-        cap->Release();
+        pendingCapture = cap;
+        pendingClient = cli;
         CoUninitialize();
     };
 
@@ -222,6 +290,16 @@ void AudioCaptureEngine::stopCapture(){
 
     if (captureThread.joinable())
         captureThread.join();
+
+    if (pendingCapture){
+        reinterpret_cast<IAudioCaptureClient *>(pendingCapture)->Release();
+        pendingCapture = nullptr;
+    }
+
+    if (pendingClient){
+        reinterpret_cast<IAudioClient *>(pendingClient)->Release();
+        pendingClient = nullptr;
+    }
 
     currentLevel = 0.0f;
 }

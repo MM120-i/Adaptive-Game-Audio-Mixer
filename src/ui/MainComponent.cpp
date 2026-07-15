@@ -198,6 +198,13 @@ void MainComponent::timerCallback(){
     const auto capturing = captureEngine.isCapturing();
     levelMeter.setLevel (capturing ? captureEngine.getCurrentLevel() : 0.0f);
 
+    if (wasCapturing && !capturing && captureEngine.getCaptureError().isNotEmpty()){
+        logger.error ("Capture stopped unexpectedly: " + captureEngine.getCaptureError());
+        updateCaptureStatus();
+    }
+
+    wasCapturing = capturing;
+
     if (capturing){
         deviceInfoLabel.setText("Device: " + captureEngine.getDeviceName(), juce::dontSendNotification);
         captureDetailsLabel.setText(

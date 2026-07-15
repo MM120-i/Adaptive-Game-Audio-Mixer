@@ -45,5 +45,7 @@ private:
     juce::TextButton saveSettingsButton{ "Save" };
     juce::TextButton reloadSettingsButton{ "Reload" };
 
+    bool wasCapturing = false;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };
