@@ -6,8 +6,8 @@
 
 struct SettingsLoadResult {
     AppSettings settings;
-    bool createdDefaults { false };
-    bool recoveredFromError { false };
+    bool createdDefaults{ false };
+    bool recoveredFromError{ false };
     juce::String message;
 };
 
@@ -16,7 +16,7 @@ public:
     SettingsStore();
 
     SettingsLoadResult load() const;
-    bool save (const AppSettings& settings, juce::String& errorMessage) const;
+    bool save (const AppSettings &, juce::String &) const;
 
     juce::File getAppDataDirectory() const;
     juce::File getConfigFile() const;

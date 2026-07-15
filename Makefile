@@ -3,13 +3,15 @@ ARCH := x64
 BUILD_DIR := build
 EXE := $(BUILD_DIR)/AudioMixer_artefacts/Debug/AudioMixer.exe
 
+SHELL = cmd
+
 .PHONY: all build release run test clean
 
 all: build
 
 build:
 	cmake -S . -B $(BUILD_DIR) -G $(GENERATOR) -A $(ARCH)
-	cmake --build $(BUILD_DIR) --config Debug
+	cmake --build $(BUILD_DIR) --config Debug --parallel
 
 release:
 	cmake -S . -B $(BUILD_DIR) -G $(GENERATOR) -A $(ARCH)
@@ -22,4 +24,4 @@ test:
 	cd $(BUILD_DIR) && ctest --output-on-failure
 
 clean:
-	rm -rf $(BUILD_DIR)
+	if exist $(BUILD_DIR) rd /s /q $(BUILD_DIR)

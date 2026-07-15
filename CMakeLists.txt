@@ -6,6 +6,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(MSVC)
+    add_compile_options(/MP)
+endif()
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_gui_app(AudioMixer
@@ -17,19 +21,29 @@ juce_add_gui_app(AudioMixer
 target_sources(AudioMixer
     PRIVATE
         src/Main.cpp
-        src/MainComponent.cpp
-        src/MainComponent.h
-        src/AppSettings.cpp
-        src/AppSettings.h
-        src/SettingsStore.cpp
-        src/SettingsStore.h
-        src/AppLogger.cpp
-        src/AppLogger.h)
+        src/ui/MainComponent.cpp
+        src/ui/MainComponent.h
+        src/ui/LevelMeter.cpp
+        src/ui/LevelMeter.h
+        src/ui/MixerLookAndFeel.h
+        src/audio/AudioCaptureEngine.cpp
+        src/audio/AudioCaptureEngine.h
+        src/core/AppSettings.cpp
+        src/core/AppSettings.h
+        src/core/SettingsStore.cpp
+        src/core/SettingsStore.h
+        src/core/AppLogger.cpp
+        src/core/AppLogger.h)
+
+target_include_directories(AudioMixer
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_link_libraries(AudioMixer
     PRIVATE
         juce::juce_gui_extra
-        juce::juce_data_structures)
+        juce::juce_data_structures
+        ole32)
 
 target_compile_definitions(AudioMixer
     PRIVATE
