@@ -5,35 +5,52 @@
 #include <functional>
 #include <thread>
 
-class AudioCaptureEngine
-{
+class AudioCaptureEngine {
+private:
+    std::atomic<float> currentLevel{ 0.0f };
+    std::atomic<int> sampleRate{ 0 };
+    std::atomic<int> channelCount{ 0 };
+    std::atomic<int> bufferSize{ 0 };
+    std::atomic<bool> capturing{ false };
+
+    juce::String deviceName;
+    juce::String diagLog;
+
+    float smoothedLevel{ 0.0f };
+
+    std::thread captureThread;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioCaptureEngine)
+
 public:
     AudioCaptureEngine();
     ~AudioCaptureEngine();
 
-    bool startCapture (juce::String& errorMessage);
+    bool startCapture (juce::String &);
     void stopCapture();
     bool isCapturing() const;
 
-    juce::String getDeviceName()      const { return deviceName; }
-    juce::String getDeviceDiagnostics() const { return diagLog; }
-    int  getSampleRate()              const { return sampleRate.load(); }
-    int  getChannelCount()            const { return channelCount.load(); }
-    int  getBufferSize()              const { return bufferSize.load(); }
-    float getCurrentLevel()           const { return currentLevel.load(); }
+    juce::String getDeviceName() const { 
+        return deviceName; 
+    }
 
-private:
-    std::atomic<float> currentLevel  { 0.0f };
-    std::atomic<int>   sampleRate    { 0 };
-    std::atomic<int>   channelCount  { 0 };
-    std::atomic<int>   bufferSize    { 0 };
-    std::atomic<bool>  capturing     { false };
+    juce::String getDeviceDiagnostics() const { 
+        return diagLog; 
+    }
 
-    juce::String deviceName;
-    juce::String diagLog;
-    float        smoothedLevel { 0.0f };
+    int getSampleRate() const { 
+        return sampleRate.load(); 
+    }
 
-    std::thread captureThread;
+    int getChannelCount() const { 
+        return channelCount.load(); 
+    }
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioCaptureEngine)
+    int getBufferSize() const { 
+        return bufferSize.load(); 
+    }
+
+    float getCurrentLevel() const { 
+        return currentLevel.load(); 
+    }
 };
