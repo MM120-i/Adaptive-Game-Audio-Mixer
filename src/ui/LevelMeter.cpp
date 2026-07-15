@@ -21,6 +21,7 @@ namespace {
 }
 
 void LevelMeter::setLevel(float newLevel){
+    newLevel = juce::jlimit(0.0f, 1.0f, newLevel);
 
     if(newLevel > decay){
         decay = newLevel;

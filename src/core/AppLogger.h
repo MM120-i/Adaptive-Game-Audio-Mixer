@@ -19,4 +19,5 @@ private:
     juce::File logFile;
     DiagnosticsSink diagnosticsSink;
     juce::StringArray bufferedMessages;
+    juce::CriticalSection lock;
 };

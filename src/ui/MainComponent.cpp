@@ -195,10 +195,11 @@ void MainComponent::resized(){
 }
 
 void MainComponent::timerCallback(){
-    if (captureEngine.isCapturing()){
-        levelMeter.setLevel(captureEngine.getCurrentLevel());
-        deviceInfoLabel.setText("Device: " + captureEngine.getDeviceName(), juce::dontSendNotification);
+    const auto capturing = captureEngine.isCapturing();
+    levelMeter.setLevel (capturing ? captureEngine.getCurrentLevel() : 0.0f);
 
+    if (capturing){
+        deviceInfoLabel.setText("Device: " + captureEngine.getDeviceName(), juce::dontSendNotification);
         captureDetailsLabel.setText(
             juce::String(captureEngine.getSampleRate()) + " Hz  |  "
             + juce::String(captureEngine.getChannelCount()) + " ch  |  "
