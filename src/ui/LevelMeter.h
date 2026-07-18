@@ -13,6 +13,8 @@ private:
 
     double peakHoldStart = 0.0;
 
+    friend class LevelMeterTests;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LevelMeter)
 
 public:

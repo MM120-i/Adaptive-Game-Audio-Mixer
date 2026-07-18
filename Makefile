@@ -21,7 +21,8 @@ run: build
 	$(EXE)
 
 test:
-	cd $(BUILD_DIR) && ctest --output-on-failure
+	cmake --build $(BUILD_DIR) --config Debug --target AudioMixerTests --parallel
+	cd $(BUILD_DIR) && ctest -C Debug --output-on-failure
 
 clean:
 	if exist $(BUILD_DIR) rd /s /q $(BUILD_DIR)

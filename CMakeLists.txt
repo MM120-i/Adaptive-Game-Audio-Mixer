@@ -48,3 +48,33 @@ target_link_libraries(AudioMixer
 target_compile_definitions(AudioMixer
     PRIVATE
         AUDIO_MIXER_VERSION="${PROJECT_VERSION}")
+
+# ── Tests ──────────────────────────────────────────────────────
+enable_testing()
+
+add_executable(AudioMixerTests)
+
+target_sources(AudioMixerTests
+    PRIVATE
+        tests/MainTest.cpp
+        tests/LevelMeterTest.cpp
+        tests/AppSettingsTest.cpp
+        src/ui/LevelMeter.cpp
+        src/ui/LevelMeter.h
+        src/core/AppSettings.cpp
+        src/core/AppSettings.h
+        src/core/SettingsStore.cpp
+        src/core/SettingsStore.h
+        src/core/AppLogger.cpp
+        src/core/AppLogger.h)
+
+target_include_directories(AudioMixerTests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_link_libraries(AudioMixerTests
+    PRIVATE
+        juce::juce_gui_extra
+        juce::juce_data_structures)
+
+add_test(NAME AudioMixerTests COMMAND AudioMixerTests)
