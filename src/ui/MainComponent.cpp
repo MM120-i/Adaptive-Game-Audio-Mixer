@@ -2,52 +2,40 @@
 
 namespace {
     constexpr int sectionPad = 20;
-    constexpr int innerPad = 16;
+    constexpr int innerPad = 14;
     constexpr int controlHeight = 32;
-    constexpr int gap = 14;
+    constexpr int gap = 12;
     constexpr float cornerRadius = 8.0f;
 
-    const juce::Colour bgDark{ 0xff1a1d23 };
-    const juce::Colour bgCard{ 0xff252830 };
-    const juce::Colour accent{ 0xff6366f1 };
-    const juce::Colour textPrimary{ 0xffe4e4e7 };
-    const juce::Colour textSecondary{ 0xff7b7d84 };
-    const juce::Colour borderSubtle{ 0xff363840 };
-    const juce::Colour statusGreen{ 0xff22c55e };
+    const juce::Colour bgDark{0xff1a1d23};
+    const juce::Colour bgCard{0xff252830};
+    const juce::Colour accent{0xff6366f1};
+    const juce::Colour textPrimary{0xffe4e4e7};
+    const juce::Colour textSecondary{0xff7b7d84};
+    const juce::Colour borderSubtle{0xff363840};
+    const juce::Colour statusGreen{0xff22c55e};
 
-    juce::Font sectionFont(){ 
-        return juce::FontOptions{ 
-            11.0f, 
-            juce::Font::bold 
-        }; 
+    juce::Font sectionFont(){
+        return juce::FontOptions{11.0f, juce::Font::bold};
     }
 
-    juce::Font headerFont(){ 
-        return juce::FontOptions{ 
-            22.0f, 
-            juce::Font::bold 
-        }; 
+    juce::Font headerFont(){
+        return juce::FontOptions{22.0f, juce::Font::bold};
     }
 
-    juce::Font bodyFont(){ 
-        return juce::FontOptions{ 13.0f }; 
+    juce::Font bodyFont(){
+        return juce::FontOptions{13.0f};
     }
 
-    juce::Font monoFont(){ 
-        return juce::FontOptions{ 12.0f }; 
+    juce::Font monoFont(){
+        return juce::FontOptions{12.0f};
     }
 
-    void drawCardBackground(juce::Graphics &g, juce::Rectangle<float> bounds){
+    void drawCard(juce::Graphics &g, juce::Rectangle<float> r){
         g.setColour(bgCard);
-        g.fillRoundedRectangle(bounds, cornerRadius);
+        g.fillRoundedRectangle(r, cornerRadius);
         g.setColour(borderSubtle);
-        g.drawRoundedRectangle(bounds, cornerRadius, 1.0f);
-    }
-
-    void drawSectionHeader(juce::Graphics &g, juce::Rectangle<float> bounds, const juce::String &text){
-        g.setColour(juce::Colour{ 0xff7b7d84 });
-        g.setFont(sectionFont());
-        g.drawText(text, bounds, juce::Justification::centredLeft);
+        g.drawRoundedRectangle(r, cornerRadius, 1.0f);
     }
 }
 
@@ -73,18 +61,17 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     addAndMakeVisible(captureSectionLabel);
 
     startCaptureButton.onClick = [this]{
-        if (captureEngine.isCapturing()){
+        if(captureEngine.isCapturing()){
             captureEngine.stopCapture();
             startCaptureButton.setButtonText("Start Capture");
             logger.info("Capture stopped.");
         }
         else{
             auto errorMsg = juce::String();
-
-            if (captureEngine.startCapture(errorMsg)){
+            if(captureEngine.startCapture(errorMsg)){
                 startCaptureButton.setButtonText("Stop Capture");
-                logger.info ("Capture started on: " + captureEngine.getDeviceName());
-                logger.info (captureEngine.getDeviceDiagnostics());
+                logger.info("Capture started on: " + captureEngine.getDeviceName());
+                logger.info(captureEngine.getDeviceDiagnostics());
             }
             else{
                 logger.error("Capture failed: " + errorMsg);
@@ -111,6 +98,27 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     addAndMakeVisible(captureDetailsLabel);
 
     addAndMakeVisible(levelMeter);
+
+    volumeSectionLabel.setFont(sectionFont());
+    volumeSectionLabel.setColour(juce::Label::textColourId, textSecondary);
+    addAndMakeVisible(volumeSectionLabel);
+
+    volumeControl.setCommitCallback([this](int volumePercent){
+        logger.info("Volume set to: " + juce::String(volumePercent) + "%");
+    });
+
+    addAndMakeVisible(volumeControl);
+
+    nowPlayingSectionLabel.setFont(sectionFont());
+    nowPlayingSectionLabel.setColour(juce::Label::textColourId, textSecondary);
+    addAndMakeVisible(nowPlayingSectionLabel);
+
+    nowPlayingLabel.setFont(bodyFont());
+    nowPlayingLabel.setColour(juce::Label::textColourId, textSecondary);
+    nowPlayingLabel.setJustificationType(juce::Justification::centredLeft);
+    nowPlayingLabel.setText("No track connected", juce::dontSendNotification);
+    addAndMakeVisible(nowPlayingLabel);
+
     diagnosticsSectionLabel.setFont(sectionFont());
     diagnosticsSectionLabel.setColour(juce::Label::textColourId, textSecondary);
     addAndMakeVisible(diagnosticsSectionLabel);
@@ -121,21 +129,21 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     diagnosticsEditor.setCaretVisible(false);
     diagnosticsEditor.setPopupMenuEnabled(true);
     diagnosticsEditor.setFont(monoFont());
-    diagnosticsEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour{ 0xff101418 });
-    diagnosticsEditor.setColour(juce::TextEditor::textColourId, juce::Colour{ 0xffd6e2ea });
-    diagnosticsEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour{ 0xff252830 });
+    diagnosticsEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour{0xff101418});
+    diagnosticsEditor.setColour(juce::TextEditor::textColourId, juce::Colour{0xffd6e2ea});
+    diagnosticsEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour{0xff252830});
     addAndMakeVisible(diagnosticsEditor);
 
     verboseDiagnosticsToggle.setToggleState(settings.verboseDiagnostics, juce::dontSendNotification);
     addAndMakeVisible(verboseDiagnosticsToggle);
 
-    saveSettingsButton.onClick = [this] { 
+    saveSettingsButton.onClick = [this]{ 
         saveSettingsFromUi(); 
     };
 
     addAndMakeVisible(saveSettingsButton);
 
-    reloadSettingsButton.onClick = [this] { 
+    reloadSettingsButton.onClick = [this]{ 
         reloadSettingsIntoUi(); 
     };
 
@@ -150,6 +158,10 @@ MainComponent::~MainComponent() = default;
 
 void MainComponent::paint(juce::Graphics &g){
     g.fillAll(bgDark);
+    drawCard(g, captureCardRect);
+    drawCard(g, volumeCardRect);
+    drawCard(g, nowPlayingCardRect);
+    drawCard(g, diagCardRect);
 }
 
 void MainComponent::resized(){
@@ -161,51 +173,78 @@ void MainComponent::resized(){
     versionLabel.setBounds(headerRow.toNearestInt());
     area.removeFromTop(static_cast<float>(gap));
 
-    auto captureCard = area.removeFromTop(150.0f);
-    auto cardInner = captureCard.reduced(innerPad);
+    const auto captureWidth = area.getWidth() * 0.56f;
+    const auto volumeWidth  = area.getWidth() - captureWidth - static_cast<float>(gap);
+    auto row = area.removeFromTop(195.0f);
+
+    captureCardRect = row.removeFromLeft(captureWidth);
+    auto capInner = captureCardRect.reduced(innerPad);
 
     captureSectionLabel.setText("Capture", juce::dontSendNotification);
-    captureSectionLabel.setBounds(cardInner.removeFromTop(18.0f).toNearestInt());
-    cardInner.removeFromTop(4.0f);
+    captureSectionLabel.setBounds(capInner.removeFromTop(18.0f).toNearestInt());
+    capInner.removeFromTop(4.0f);
 
-    auto buttonRow = cardInner.removeFromTop(static_cast<float>(controlHeight));
+    auto buttonRow = capInner.removeFromTop(static_cast<float>(controlHeight));
     startCaptureButton.setBounds(buttonRow.removeFromLeft(140.0f).toNearestInt());
-    buttonRow.removeFromLeft(12.0f);
+    buttonRow.removeFromLeft(10.0f);
     captureStatusLabel.setBounds(buttonRow.toNearestInt());
-    cardInner.removeFromTop(static_cast<float>(gap) - 4.0f);
-    deviceInfoLabel.setBounds(cardInner.removeFromTop(18.0f).toNearestInt());
-    captureDetailsLabel.setBounds(cardInner.removeFromTop(16.0f).toNearestInt());
-    cardInner.removeFromTop(4.0f);
-    levelMeter.setBounds(cardInner.removeFromTop(40.0f).toNearestInt());
-    area.removeFromTop(static_cast<float>(gap));
 
-    auto diagCard = area.removeFromTop(area.getHeight() * 0.45f);
-    auto diagInner = diagCard.reduced(innerPad);
+    capInner.removeFromTop(6.0f);
+    deviceInfoLabel.setBounds(capInner.removeFromTop(18.0f).toNearestInt());
+    captureDetailsLabel.setBounds(capInner.removeFromTop(16.0f).toNearestInt());
+    capInner.removeFromTop(6.0f);
+    levelMeter.setBounds(capInner.toNearestInt());
+
+    row.removeFromLeft(static_cast<float>(gap));
+    volumeCardRect = row;
+    auto volInner = volumeCardRect.reduced(innerPad);
+
+    volumeSectionLabel.setText("Volume", juce::dontSendNotification);
+    volumeSectionLabel.setBounds(volInner.removeFromTop(18.0f).toNearestInt());
+    volInner.removeFromTop(6.0f);
+    volumeControl.setBounds(volInner.toNearestInt());
+    area.removeFromTop(static_cast<float>(gap));
+    nowPlayingCardRect = area.removeFromTop(44.0f);
+
+    auto npInner = nowPlayingCardRect.reduced(innerPad);
+
+    nowPlayingSectionLabel.setText("Now Playing", juce::dontSendNotification);
+    nowPlayingSectionLabel.setBounds(npInner.removeFromTop(18.0f).toNearestInt());
+    nowPlayingLabel.setBounds(npInner.toNearestInt());
+
+    area.removeFromTop(static_cast<float>(gap));
+    diagCardRect = area;
+
+    auto diagInner = diagCardRect.reduced(innerPad);
 
     diagnosticsSectionLabel.setText("Diagnostics", juce::dontSendNotification);
     diagnosticsSectionLabel.setBounds(diagInner.removeFromTop(18.0f).toNearestInt());
     diagInner.removeFromTop(4.0f);
-    diagnosticsEditor.setBounds(diagInner.toNearestInt());
-    area.removeFromTop(static_cast<float>(gap));
-    verboseDiagnosticsToggle.setBounds(area.removeFromLeft(140.0f).toNearestInt());
-    area.removeFromLeft(12.0f);
-    saveSettingsButton.setBounds(area.removeFromLeft(80.0f).toNearestInt());
-    area.removeFromLeft(8.0f);
-    reloadSettingsButton.setBounds(area.removeFromLeft(80.0f).toNearestInt());
+
+    const auto editorHeight = diagInner.getHeight() - 32.0f;
+    diagnosticsEditor.setBounds(diagInner.removeFromTop(editorHeight).toNearestInt());
+    diagInner.removeFromTop(6.0f);
+
+    auto settingsRow = diagInner;
+    verboseDiagnosticsToggle.setBounds(settingsRow.removeFromLeft(140.0f).toNearestInt());
+    settingsRow.removeFromLeft(8.0f);
+    saveSettingsButton.setBounds(settingsRow.removeFromLeft(80.0f).toNearestInt());
+    settingsRow.removeFromLeft(8.0f);
+    reloadSettingsButton.setBounds(settingsRow.removeFromLeft(80.0f).toNearestInt());
 }
 
 void MainComponent::timerCallback(){
     const auto capturing = captureEngine.isCapturing();
-    levelMeter.setLevel (capturing ? captureEngine.getCurrentLevel() : 0.0f);
+    levelMeter.setLevel(capturing ? captureEngine.getCurrentLevel() : 0.0f);
 
-    if (wasCapturing && !capturing && captureEngine.getCaptureError().isNotEmpty()){
-        logger.error ("Capture stopped unexpectedly: " + captureEngine.getCaptureError());
+    if(wasCapturing && !capturing && captureEngine.getCaptureError().isNotEmpty()){
+        logger.error("Capture stopped unexpectedly: " + captureEngine.getCaptureError());
         updateCaptureStatus();
     }
 
     wasCapturing = capturing;
 
-    if (capturing){
+    if(capturing){
         deviceInfoLabel.setText("Device: " + captureEngine.getDeviceName(), juce::dontSendNotification);
         captureDetailsLabel.setText(
             juce::String(captureEngine.getSampleRate()) + " Hz  |  "
@@ -217,7 +256,7 @@ void MainComponent::timerCallback(){
 }
 
 void MainComponent::updateCaptureStatus(){
-    if (captureEngine.isCapturing()){
+    if(captureEngine.isCapturing()){
         captureStatusLabel.setColour(juce::Label::textColourId, statusGreen);
         captureStatusLabel.setText(juce::String::fromUTF8("\xe2\x97\x8f Active"), juce::dontSendNotification);
     }

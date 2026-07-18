@@ -33,7 +33,10 @@ target_sources(AudioMixer
         src/core/SettingsStore.cpp
         src/core/SettingsStore.h
         src/core/AppLogger.cpp
-        src/core/AppLogger.h)
+        src/core/AppLogger.h
+        src/ui/VolumeControl.cpp
+        src/ui/VolumeControl.h
+)
 
 target_include_directories(AudioMixer
     PRIVATE
@@ -59,6 +62,9 @@ target_sources(AudioMixerTests
         tests/MainTest.cpp
         tests/LevelMeterTest.cpp
         tests/AppSettingsTest.cpp
+        tests/VolumeControlTest.cpp
+        src/ui/VolumeControl.cpp
+        src/ui/VolumeControl.h
         src/ui/LevelMeter.cpp
         src/ui/LevelMeter.h
         src/core/AppSettings.cpp
@@ -66,7 +72,8 @@ target_sources(AudioMixerTests
         src/core/SettingsStore.cpp
         src/core/SettingsStore.h
         src/core/AppLogger.cpp
-        src/core/AppLogger.h)
+        src/core/AppLogger.h
+)
 
 target_include_directories(AudioMixerTests
     PRIVATE
