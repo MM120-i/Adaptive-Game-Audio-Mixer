@@ -1,4 +1,4 @@
-#include "AudioCaptureEngine.h"
+#include <cmath>
 
 #define WIN32_LEAN_AND_MEAN
 
@@ -9,7 +9,7 @@
 #include <functiondiscoverykeys_devpkey.h>
 #include <combaseapi.h>
 
-#include <cmath>
+#include "AudioCaptureEngine.h"
 
 namespace {
     juce::String hrDesc(HRESULT hr){
@@ -29,7 +29,7 @@ namespace {
     }
 
     struct ComPtr {
-        void* p = nullptr;
+        void *p = nullptr;
 
         ComPtr() = default;
         ComPtr(const ComPtr &) = delete;
@@ -253,10 +253,10 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
                     const int chs = channelCount.load();
                     float sum = 0.0f;
 
-                    for (UINT32 i = 0; i < frm; ++i){
+                    for(UINT32 i = 0; i < frm; ++i){
                         float mono = 0.0f;
 
-                        for (size_t c = 0; c < chs; ++c)
+                        for(size_t c = 0; c < chs; ++c)
                             mono += samples[i * chs + c];
 
                         mono /= static_cast<float>(chs);

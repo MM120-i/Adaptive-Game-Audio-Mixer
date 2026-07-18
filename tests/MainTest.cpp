@@ -12,9 +12,9 @@ namespace {
 }
 
 int main(){
-    juce::ScopedJuceInitialiser_GUI init;
     ConsoleLogger logger;
     juce::Logger::setCurrentLogger(&logger);
+    juce::ScopedJuceInitialiser_GUI init;
     juce::UnitTestRunner runner;
 
     runner.runAllTests();
