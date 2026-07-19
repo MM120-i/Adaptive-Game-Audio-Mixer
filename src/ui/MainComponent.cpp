@@ -113,12 +113,6 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     nowPlayingSectionLabel.setColour(juce::Label::textColourId, textSecondary);
     addAndMakeVisible(nowPlayingSectionLabel);
 
-    nowPlayingLabel.setFont(bodyFont());
-    nowPlayingLabel.setColour(juce::Label::textColourId, textSecondary);
-    nowPlayingLabel.setJustificationType(juce::Justification::centredLeft);
-    nowPlayingLabel.setText("No track connected", juce::dontSendNotification);
-    addAndMakeVisible(nowPlayingLabel);
-
     diagnosticsSectionLabel.setFont(sectionFont());
     diagnosticsSectionLabel.setColour(juce::Label::textColourId, textSecondary);
     addAndMakeVisible(diagnosticsSectionLabel);
@@ -166,8 +160,10 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     addAndMakeVisible(spotifyStatusLabel);
 
     spotifyClient.onStateChanged = [this]{
-        spotifyClient.saveTokens(settings);
-        juce::MessageManager::callAsync([this]{ updateSpotifyUi(); });
+        juce::MessageManager::callAsync([this]{
+            spotifyClient.saveTokens(settings);
+            updateSpotifyUi();
+        });
     };
 
     spotifyClient.loadTokens(settings);
@@ -331,14 +327,6 @@ void MainComponent::updateSpotifyUi(){
 
             case SpotifyStatus::NoActiveDevice:
                 spotifyStatusLabel.setText("Connected — No active device. Open Spotify.", juce::dontSendNotification);
-                break;
-
-            case SpotifyStatus::Connecting:
-                spotifyStatusLabel.setText("Connecting...", juce::dontSendNotification);
-                break;
-
-            case SpotifyStatus::Error:
-                spotifyStatusLabel.setText(spotifyClient.lastErrorMessage(), juce::dontSendNotification);
                 break;
 
             default:

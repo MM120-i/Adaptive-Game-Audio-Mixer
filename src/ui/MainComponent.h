@@ -51,7 +51,6 @@ private:
     LevelMeter levelMeter;
     juce::Label volumeSectionLabel;
     juce::Label nowPlayingSectionLabel;
-    juce::Label nowPlayingLabel;
     juce::Label diagnosticsSectionLabel;
     
     juce::TextEditor diagnosticsEditor;

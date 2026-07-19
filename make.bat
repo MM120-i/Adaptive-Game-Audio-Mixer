@@ -7,7 +7,7 @@ if exist "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\Comm
     set CMAKE="C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 ) else (
     where cmake >nul 2>&1
-    if %ERRORLEVEL% equ 0 set CMAKE=cmake
+    if !ERRORLEVEL! equ 0 set CMAKE=cmake
 )
 
 if not defined CMAKE (
@@ -55,12 +55,17 @@ if /i "%1"=="run" (
 
 if /i "%1"=="test" (
     if "%2"=="" (set CONFIG=Debug) else (set CONFIG=%2)
+    if not exist build\CMakeCache.txt (
+        echo ==> Configuring CMake...
+        %CMAKE% -S . -B build -G "Visual Studio 18 2026" -A x64
+        if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
+    )
     echo ==> Building + testing ^(!CONFIG!^)...
     %CMAKE% --build build --config !CONFIG! --target AudioMixerTests --parallel
     if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
     echo.
     powershell -ExecutionPolicy Bypass -File test.ps1 -Config !CONFIG!
-    exit /b 0
+    exit /b !ERRORLEVEL!
 )
 
 if "%1"=="" (
@@ -70,10 +75,10 @@ if "%1"=="" (
 )
 
 echo ==> Building AudioMixer (%CONFIG%)...
-if not exist build\CMakeCache.txt (
+    if not exist build\CMakeCache.txt (
     echo ==> Configuring CMake...
     %CMAKE% -S . -B build -G "Visual Studio 18 2026" -A x64
-    if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+    if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
 )
 %CMAKE% --build build --config %CONFIG% --parallel
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
