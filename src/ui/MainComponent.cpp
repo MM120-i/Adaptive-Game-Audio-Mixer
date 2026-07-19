@@ -149,6 +149,30 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
 
     addAndMakeVisible(reloadSettingsButton);
 
+    spotifyConnectButton.onClick = [this]{
+        if(spotifyClient.isAuthenticated())
+            spotifyClient.disconnect();
+        else
+            spotifyClient.startAuth();
+
+        updateSpotifyUi();
+    };
+
+    addAndMakeVisible(spotifyConnectButton);
+
+    spotifyStatusLabel.setFont(bodyFont());
+    spotifyStatusLabel.setColour(juce::Label::textColourId, textSecondary);
+    spotifyStatusLabel.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(spotifyStatusLabel);
+
+    spotifyClient.onStateChanged = [this]{
+        spotifyClient.saveTokens(settings);
+        juce::MessageManager::callAsync([this]{ updateSpotifyUi(); });
+    };
+
+    spotifyClient.loadTokens(settings);
+
+    updateSpotifyUi();
     updateCaptureStatus();
     startTimerHz(20);
     logger.info("UI created.");
@@ -204,13 +228,18 @@ void MainComponent::resized(){
     volInner.removeFromTop(6.0f);
     volumeControl.setBounds(volInner.toNearestInt());
     area.removeFromTop(static_cast<float>(gap));
-    nowPlayingCardRect = area.removeFromTop(44.0f);
+    nowPlayingCardRect = area.removeFromTop(90.0f);
 
     auto npInner = nowPlayingCardRect.reduced(innerPad);
 
     nowPlayingSectionLabel.setText("Now Playing", juce::dontSendNotification);
     nowPlayingSectionLabel.setBounds(npInner.removeFromTop(18.0f).toNearestInt());
-    nowPlayingLabel.setBounds(npInner.toNearestInt());
+    npInner.removeFromTop(4.0f);
+
+    auto spotifyRow = npInner.removeFromTop(static_cast<float>(controlHeight));
+    spotifyConnectButton.setBounds(spotifyRow.removeFromLeft(140.0f).toNearestInt());
+    spotifyRow.removeFromLeft(10.0f);
+    spotifyStatusLabel.setBounds(spotifyRow.toNearestInt());
 
     area.removeFromTop(static_cast<float>(gap));
     diagCardRect = area;
@@ -253,6 +282,14 @@ void MainComponent::timerCallback(){
             juce::dontSendNotification
         );
     }
+
+    spotifyPollCounter++;
+    
+    if(spotifyPollCounter >= 40){
+        spotifyPollCounter = 0;
+        spotifyClient.poll();
+        updateSpotifyUi();
+    }
 }
 
 void MainComponent::updateCaptureStatus(){
@@ -266,6 +303,55 @@ void MainComponent::updateCaptureStatus(){
     }
 }
 
+void MainComponent::updateSpotifyUi(){
+    const auto currentStatus = spotifyClient.status();
+
+    if(currentStatus == SpotifyStatus::Error){
+        spotifyConnectButton.setButtonText("Connect Spotify");
+        spotifyStatusLabel.setText(spotifyClient.lastErrorMessage(), juce::dontSendNotification);
+        return;
+    }
+
+    if(currentStatus == SpotifyStatus::Connecting){
+        spotifyConnectButton.setButtonText("Connect Spotify");
+        spotifyStatusLabel.setText("Connecting... check your browser", juce::dontSendNotification);
+        return;
+    }
+
+    if(spotifyClient.isAuthenticated()){
+        spotifyConnectButton.setButtonText("Disconnect");
+
+        switch(spotifyClient.status()){
+            case SpotifyStatus::Connected:
+                if(spotifyClient.trackTitle().isNotEmpty())
+                    spotifyStatusLabel.setText(spotifyClient.trackTitle() + " - " + spotifyClient.trackArtist(), juce::dontSendNotification);
+                else
+                    spotifyStatusLabel.setText("Connected — waiting for track info", juce::dontSendNotification);
+                break;
+
+            case SpotifyStatus::NoActiveDevice:
+                spotifyStatusLabel.setText("Connected — No active device. Open Spotify.", juce::dontSendNotification);
+                break;
+
+            case SpotifyStatus::Connecting:
+                spotifyStatusLabel.setText("Connecting...", juce::dontSendNotification);
+                break;
+
+            case SpotifyStatus::Error:
+                spotifyStatusLabel.setText(spotifyClient.lastErrorMessage(), juce::dontSendNotification);
+                break;
+
+            default:
+                spotifyStatusLabel.setText("Connected", juce::dontSendNotification);
+                break;
+        }
+    } 
+    else {
+        spotifyConnectButton.setButtonText("Connect Spotify");
+        spotifyStatusLabel.setText("Not connected", juce::dontSendNotification);
+    }
+}
+
 void MainComponent::appendDiagnosticsMessage(const juce::String &message){
     diagnosticsEditor.moveCaretToEnd();
     diagnosticsEditor.insertTextAtCaret(message + juce::newLine);
@@ -274,6 +360,7 @@ void MainComponent::appendDiagnosticsMessage(const juce::String &message){
 void MainComponent::saveSettingsFromUi(){
     settings.verboseDiagnostics = verboseDiagnosticsToggle.getToggleState();
     settings.lastLaunchTimestamp = juce::Time::getCurrentTime().toISO8601(true);
+    spotifyClient.saveTokens(settings);
 
     auto errorMessage = juce::String();
 

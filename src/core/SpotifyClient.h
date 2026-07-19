@@ -47,7 +47,7 @@ private:
 
     juce::String codeVerifier;
     std::thread serverThread;
-    juce::StreamingSocket *serverSocket = nullptr;
+    uintptr_t serverSocketHandle = 0;
 
     SpotifyStatus status_{SpotifyStatus::Disconnected};
     juce::String lastErrorMessage_;

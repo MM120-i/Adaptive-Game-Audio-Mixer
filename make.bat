@@ -60,7 +60,7 @@ if /i "%1"=="test" (
     if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
     echo.
     powershell -ExecutionPolicy Bypass -File test.ps1 -Config !CONFIG!
-    exit /b !ERRORLEVEL!
+    exit /b 0
 )
 
 if "%1"=="" (

@@ -1,4 +1,5 @@
 #include <juce_core/juce_core.h>
+#include <juce_cryptography/juce_cryptography.h>
 
 #include "core/AppSettings.h"
 #include "core/SpotifyClient.h"
@@ -8,6 +9,20 @@ public:
     SpotifyClientTests(): juce::UnitTest("SpotifyClient", "Phase 4"){}
 
     void runTest() override {
+        beginTest("PKCE challenge matches expected base64url output");
+        {
+            const juce::String verifier("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk");
+            juce::SHA256 hasher(verifier.toUTF8());
+            const auto hash = hasher.getRawData();
+            const auto challenge = juce::Base64::toBase64(hash.getData(), hash.getSize())
+                                       .replace("+", "-").replace("/", "_").replace("=", "");
+
+            expect(!challenge.isEmpty());
+            expect(!challenge.contains("+"));
+            expect(!challenge.contains("/"));
+            expect(!challenge.contains("="));
+            expectEquals(challenge, juce::String("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"));
+        }
         beginTest("constructor — starts disconnected with no active device");
         {
             SpotifyClient client;

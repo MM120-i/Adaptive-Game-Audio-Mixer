@@ -1,13 +1,16 @@
 #include "SpotifyClient.h"
 #include "spotify_config.h"
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
 #include <juce_core/juce_core.h>
 #include <juce_cryptography/juce_cryptography.h>
 #include <juce_events/juce_events.h>
 
 namespace {
     constexpr int CONNECTION_TIMEOUT_MS = 5000;
-    constexpr int PORT = 8888;
+    constexpr int CALLBACK_PORT = 8888;
     constexpr int BUFFER_SIZE = 4096;
 
     juce::String loadAuthPage(const char *filename){
@@ -136,10 +139,9 @@ bool SpotifyClient::isAuthenticated() const {
 }
 
 void SpotifyClient::startAuth(){
-    codeVerifier = generateCodeVerifier();
-
     {
         const juce::ScopedLock sl(lock);
+        codeVerifier = generateCodeVerifier();
         status_ = SpotifyStatus::Connecting;
         lastErrorMessage_.clear();
     }
@@ -161,8 +163,10 @@ void SpotifyClient::startAuth(){
 void SpotifyClient::disconnect(){
     const juce::ScopedLock sl(lock);
 
-    if(serverSocket)
-        serverSocket->close();
+    if(serverSocketHandle){
+        closesocket((SOCKET)serverSocketHandle);
+        serverSocketHandle = 0;
+    }
 
     authenticated = false;
     accessToken.clear();
@@ -263,43 +267,79 @@ void SpotifyClient::refreshAccessToken(){
 }
 
 void SpotifyClient::exchangeCodeForTokens(const juce::String &code){
-    juce::StringPairArray form;
-    form.set("grant_type", "authorization_code");
-    form.set("code", code);
-    form.set("redirect_uri", SPOTIFY_REDIRECT_URI);
-    form.set("client_id", SPOTIFY_CLIENT_ID);
-    form.set("code_verifier", codeVerifier);
+    juce::String localVerifier;
 
-    codeVerifier.clear();
+    {
+        const juce::ScopedLock sl(lock);
+        localVerifier = codeVerifier;
+        codeVerifier.clear();
+    }
 
-    const auto json = httpPostForm(kTokenUrl, form);
+    auto body = juce::String("grant_type=authorization_code")
+                + "&code=" + code
+                + "&redirect_uri=" + SPOTIFY_REDIRECT_URI
+                + "&client_id=" + SPOTIFY_CLIENT_ID
+                + "&code_verifier=" + localVerifier;
+
+    juce::URL req(kTokenUrl);
+    req = req.withPOSTData(body);
+
+    auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
+                       .withConnectionTimeoutMs(CONNECTION_TIMEOUT_MS)
+                       .withHttpRequestCmd("POST")
+                       .withExtraHeaders("Content-Type: application/x-www-form-urlencoded");
+
+    std::unique_ptr<juce::InputStream> stream(req.createInputStream(options));
+
+    if(!stream){
+        const juce::ScopedLock sl(lock);
+        status_ = SpotifyStatus::Error;
+        lastErrorMessage_ = "Token endpoint unreachable";
+        return;
+    }
+
+    juce::String response = stream->readEntireStreamAsString();
+    juce::var json = juce::JSON::parse(response);
 
     if(!json.isObject()){
+        const juce::ScopedLock sl(lock);
         status_ = SpotifyStatus::Error;
+        lastErrorMessage_ = "Token endpoint returned invalid response: " + response.substring(0, 100);
+
         return;
     }
 
-    const auto *obj = json.getDynamicObject();
+    juce::DynamicObject* obj = json.getDynamicObject();
 
     if(!obj){
+        const juce::ScopedLock sl(lock);
         status_ = SpotifyStatus::Error;
+        lastErrorMessage_ = "Token endpoint returned empty response";
+        
         return;
     }
-    
-    const juce::ScopedLock sl(lock);
 
-    accessToken = obj->getProperty("access_token").toString();
-    refreshToken = obj->getProperty("refresh_token").toString();
-    const auto expiresIn = static_cast<int>(obj->getProperty("expires_in"));
-    tokenExpiry = juce::Time::currentTimeMillis() + (expiresIn - 30) * 1000;
-    authenticated = !accessToken.isEmpty();
+    {
+        const juce::ScopedLock sl(lock);
 
-    if(authenticated){
-        status_ = SpotifyStatus::Connected;
-    }
-    else {
-        status_ = SpotifyStatus::Error;
-        lastErrorMessage_ = "Failed to exchange authorization code";
+        accessToken = obj->getProperty("access_token").toString();
+        refreshToken = obj->getProperty("refresh_token").toString();
+        tokenExpiry = juce::Time::currentTimeMillis()
+                      + (static_cast<int>(obj->getProperty("expires_in")) - 30) * 1000;
+        authenticated = !accessToken.isEmpty();
+
+        if(authenticated){
+            status_ = SpotifyStatus::Connected;
+        }
+        else {
+            status_ = SpotifyStatus::Error;
+
+            if(obj->hasProperty("error"))
+                lastErrorMessage_ = "Spotify: " + obj->getProperty("error").toString();
+
+            if(obj->hasProperty("error_description"))
+                lastErrorMessage_ += " - " + obj->getProperty("error_description").toString();
+        }
     }
 }
 
@@ -308,33 +348,74 @@ void SpotifyClient::startCallbackServer(){
     if(serverThread.joinable())
         serverThread.join();
 
-    auto* socket = new juce::StreamingSocket();
+    serverThread = std::thread([this] {
+        WSADATA wsaData;
+        WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-    if(!socket->createListener(PORT, "127.0.0.1")){
-        delete socket;
-        return;
-    }
+        auto listenSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-    {
-        const juce::ScopedLock sl(lock);
-        serverSocket = socket;
-    }
+        if(listenSocket == INVALID_SOCKET){
+            const juce::ScopedLock sl(lock);
+            status_ = SpotifyStatus::Error;
+            lastErrorMessage_ = "Failed to create socket";
 
-    serverThread = std::thread([this, socket] {
-        auto* client = socket->waitForNextConnection();
+            if(onStateChanged) 
+                juce::MessageManager::callAsync(onStateChanged);
+            
+            return;
+        }
+
+        struct sockaddr_in addr = {};
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = INADDR_ANY;
+        addr.sin_port = htons((u_short)CALLBACK_PORT);
+
+        if(bind(listenSocket, (struct sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR){
+            closesocket(listenSocket);
+            const juce::ScopedLock sl(lock);
+            status_ = SpotifyStatus::Error;
+            lastErrorMessage_ = "Failed to bind port " + juce::String(CALLBACK_PORT);
+
+            if(onStateChanged) 
+                juce::MessageManager::callAsync(onStateChanged);
+
+            return;
+        }
+
+        if(listen(listenSocket, SOMAXCONN) == SOCKET_ERROR){
+            closesocket(listenSocket);
+            const juce::ScopedLock sl(lock);
+            status_ = SpotifyStatus::Error;
+            lastErrorMessage_ = "Failed to listen on port " + juce::String(CALLBACK_PORT);
+
+            if(onStateChanged)
+                juce::MessageManager::callAsync(onStateChanged);
+
+            return;
+        }
 
         {
             const juce::ScopedLock sl(lock);
-            serverSocket = nullptr;
+            serverSocketHandle = (uintptr_t)listenSocket;
         }
 
-        if(!client){
-            delete socket;
+        auto clientSocket = accept(listenSocket, nullptr, nullptr);
+        closesocket(listenSocket);
+
+        {
+            const juce::ScopedLock sl(lock);
+            serverSocketHandle = 0;
+        }
+
+        if(clientSocket == INVALID_SOCKET){
+            if(onStateChanged) 
+                juce::MessageManager::callAsync(onStateChanged);
+
             return;
         }
 
         char buf[BUFFER_SIZE] = {};
-        client->read(buf, sizeof(buf) - 1, false);
+        recv(clientSocket, buf, sizeof(buf) - 1, 0);
         juce::String request(buf);
         const auto codeStart = request.indexOf("?code=");
 
@@ -342,10 +423,9 @@ void SpotifyClient::startCallbackServer(){
             const auto codeEnd = request.indexOf(codeStart + 6, " ");
             const auto code = request.substring(
                 codeStart + 6, 
-                codeEnd == -1 
-                    ? codeStart + 200 
-                    : codeEnd
+                codeEnd == -1 ? codeStart + 200 : codeEnd
             );
+
             exchangeCodeForTokens(code);
 
             const juce::String response = "HTTP/1.1 200 OK\r\n"
@@ -354,7 +434,7 @@ void SpotifyClient::startCallbackServer(){
                                    "\r\n"
                                    + loadAuthPage("success.html");
 
-            client->write(response.getCharPointer(), response.length());
+            send(clientSocket, response.getCharPointer(), response.length(), 0);
         } 
         else {
             const juce::String response = "HTTP/1.1 400 Bad Request\r\n"
@@ -363,11 +443,10 @@ void SpotifyClient::startCallbackServer(){
                                    "\r\n"
                                    + loadAuthPage("error.html");
 
-            client->write(response.getCharPointer(), response.length());
+            send(clientSocket, response.getCharPointer(), response.length(), 0);
         }
 
-        delete client;
-        delete socket;
+        closesocket(clientSocket);
 
         if(onStateChanged)
             juce::MessageManager::callAsync(onStateChanged);
