@@ -55,12 +55,12 @@ if /i "%1"=="run" (
 
 if /i "%1"=="test" (
     if "%2"=="" (set CONFIG=Debug) else (set CONFIG=%2)
-    echo ==> Building + testing ^(%CONFIG%^)...
-    %CMAKE% --build build --config %CONFIG% --target AudioMixerTests --parallel
-    if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+    echo ==> Building + testing ^(!CONFIG!^)...
+    %CMAKE% --build build --config !CONFIG! --target AudioMixerTests --parallel
+    if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
     echo.
-    powershell -ExecutionPolicy Bypass -File test.ps1 -Config %CONFIG%
-    exit /b %ERRORLEVEL%
+    powershell -ExecutionPolicy Bypass -File test.ps1 -Config !CONFIG!
+    exit /b !ERRORLEVEL!
 )
 
 if "%1"=="" (

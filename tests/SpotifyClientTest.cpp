@@ -25,7 +25,7 @@ public:
             AppSettings settings;
             settings.spotifyAccessToken = "test_access";
             settings.spotifyRefreshToken = "test_refresh";
-            settings.spotifyTokenExpiry = juce::Time::getApproximateMillisecondCounter() + 60000;
+            settings.spotifyTokenExpiry = juce::Time::currentTimeMillis() + 60000;
             client.loadTokens(settings);
 
             expect(client.isAuthenticated() == true);
@@ -46,7 +46,7 @@ public:
             AppSettings settings;
             settings.spotifyAccessToken = "test_access";
             settings.spotifyRefreshToken = "test_refresh";
-            settings.spotifyTokenExpiry = juce::Time::getApproximateMillisecondCounter() + 60000;
+            settings.spotifyTokenExpiry = juce::Time::currentTimeMillis() + 60000;
 
             client.loadTokens(settings);
 
@@ -77,7 +77,7 @@ public:
             expect(client.status() == SpotifyStatus::Disconnected);
         }
 
-        beginTest("loadTokens — zero expiry without refresh token stays Disconnected");
+        beginTest("loadTokens — zero expiry with refresh token stays Disconnected");
         {
             SpotifyClient client;
 
@@ -111,7 +111,7 @@ public:
             AppSettings settings;
             settings.spotifyAccessToken = "test_access";
             settings.spotifyRefreshToken = "test_refresh";
-            settings.spotifyTokenExpiry = juce::Time::getApproximateMillisecondCounter() + 60000;
+            settings.spotifyTokenExpiry = juce::Time::currentTimeMillis() + 60000;
             client.loadTokens(settings);
 
             expect(client.lastErrorMessage().isEmpty());
@@ -124,7 +124,7 @@ public:
             AppSettings settings;
             settings.spotifyAccessToken = "test_access";
             settings.spotifyRefreshToken = "test_refresh";
-            settings.spotifyTokenExpiry = juce::Time::getApproximateMillisecondCounter() + 60000;
+            settings.spotifyTokenExpiry = juce::Time::currentTimeMillis() + 60000;
             client.loadTokens(settings);
 
             client.disconnect();
@@ -141,7 +141,7 @@ public:
             AppSettings settings;
             settings.spotifyAccessToken = "test_access";
             settings.spotifyRefreshToken = "test_refresh";
-            settings.spotifyTokenExpiry = juce::Time::getApproximateMillisecondCounter() + 60000;
+            settings.spotifyTokenExpiry = juce::Time::currentTimeMillis() + 60000;
             client.loadTokens(settings);
 
             expect(client.hasActiveDevice() == false);
@@ -159,7 +159,7 @@ public:
             AppSettings settings;
             settings.spotifyAccessToken = "test_access";
             settings.spotifyRefreshToken = "test_refresh";
-            settings.spotifyTokenExpiry = juce::Time::getApproximateMillisecondCounter() + 60000;
+            settings.spotifyTokenExpiry = juce::Time::currentTimeMillis() + 60000;
             client.loadTokens(settings);
 
             expect(client.isPlaying() == false); 

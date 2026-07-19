@@ -190,7 +190,7 @@ void SpotifyClient::loadTokens(const AppSettings &settings){
         refreshToken = settings.spotifyRefreshToken;
         tokenExpiry = settings.spotifyTokenExpiry;
 
-        const auto now = juce::Time::getApproximateMillisecondCounter();
+        const auto now = juce::Time::currentTimeMillis();
 
         if(refreshToken.isNotEmpty() && tokenExpiry > 0){
             if(now >= tokenExpiry)
@@ -253,7 +253,7 @@ void SpotifyClient::refreshAccessToken(){
 
     accessToken = obj->getProperty("access_token").toString();
     const auto expiresIn = static_cast<int>(obj->getProperty("expires_in"));
-    tokenExpiry = juce::Time::getApproximateMillisecondCounter() + (expiresIn - 30) * 1000;
+    tokenExpiry = juce::Time::currentTimeMillis() + (expiresIn - 30) * 1000;
 
     if(obj->hasProperty("refresh_token"))
         refreshToken = obj->getProperty("refresh_token").toString();
@@ -291,7 +291,7 @@ void SpotifyClient::exchangeCodeForTokens(const juce::String &code){
     accessToken = obj->getProperty("access_token").toString();
     refreshToken = obj->getProperty("refresh_token").toString();
     const auto expiresIn = static_cast<int>(obj->getProperty("expires_in"));
-    tokenExpiry = juce::Time::getApproximateMillisecondCounter() + (expiresIn - 30) * 1000;
+    tokenExpiry = juce::Time::currentTimeMillis() + (expiresIn - 30) * 1000;
     authenticated = !accessToken.isEmpty();
 
     if(authenticated){
@@ -385,7 +385,7 @@ void SpotifyClient::poll(){
         if(!authenticated)
             return;
 
-        const auto now = juce::Time::getApproximateMillisecondCounter();
+        const auto now = juce::Time::currentTimeMillis();
 
         if(now >= tokenExpiry)
             needsRefresh = true;
