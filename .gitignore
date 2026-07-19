@@ -5,5 +5,7 @@ CMakeUserPresets.json
 *.user
 *.suo
 *.log
-
 *.txt
+
+.env
+spotify_config.h.in

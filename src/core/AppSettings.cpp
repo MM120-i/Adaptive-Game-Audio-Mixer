@@ -62,6 +62,13 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
     settings.windowHeight = readBoundedInt(*object, "windowHeight", settings.windowHeight, minimumWindowHeight, maximumWindowHeight, usedDefaults);
     settings.verboseDiagnostics = readBool(*object, "verboseDiagnostics", settings.verboseDiagnostics, usedDefaults);
     settings.lastLaunchTimestamp = readString (*object, "lastLaunchTimestamp", settings.lastLaunchTimestamp, usedDefaults);
+    settings.spotifyAccessToken  = readString (*object, "spotifyAccessToken",  {}, usedDefaults);
+    settings.spotifyRefreshToken = readString (*object, "spotifyRefreshToken", {}, usedDefaults);
+
+    if (object->hasProperty("spotifyTokenExpiry"))
+        settings.spotifyTokenExpiry = static_cast<juce::int64>(object->getProperty("spotifyTokenExpiry"));
+    else
+        settings.spotifyTokenExpiry = 0;
 
     return settings;
 }
@@ -72,6 +79,9 @@ juce::var AppSettings::toJson() const {
     object->setProperty("windowHeight", windowHeight);
     object->setProperty("verboseDiagnostics", verboseDiagnostics);
     object->setProperty("lastLaunchTimestamp", lastLaunchTimestamp);
+    object->setProperty("spotifyAccessToken", spotifyAccessToken);
+    object->setProperty("spotifyRefreshToken", spotifyRefreshToken);
+    object->setProperty("spotifyTokenExpiry", spotifyTokenExpiry);
 
     return juce::var(object.release());
 }

@@ -10,6 +10,16 @@ if(MSVC)
     add_compile_options(/MP)
 endif()
 
+file(STRINGS "${CMAKE_SOURCE_DIR}/.env" ENV_LINES)
+
+foreach(LINE ${ENV_LINES})
+    if(LINE MATCHES "^SPOTIFY_CLIENT_ID=(.*)")
+        set(SPOTIFY_CLIENT_ID "${CMAKE_MATCH_1}")
+    endif()
+endforeach()
+
+configure_file(spotify_config.h.in spotify_config.h @ONLY)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_gui_app(AudioMixer
@@ -36,16 +46,20 @@ target_sources(AudioMixer
         src/core/AppLogger.h
         src/ui/VolumeControl.cpp
         src/ui/VolumeControl.h
+        src/core/SpotifyClient.cpp
+        src/core/SpotifyClient.h
 )
 
 target_include_directories(AudioMixer
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR})
 
 target_link_libraries(AudioMixer
     PRIVATE
         juce::juce_gui_extra
         juce::juce_data_structures
+        juce::juce_cryptography
         ole32)
 
 target_compile_definitions(AudioMixer
