@@ -167,6 +167,7 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     };
 
     spotifyClient.loadTokens(settings);
+    spotifyClient.startPolling();
 
     updateSpotifyUi();
     updateCaptureStatus();
@@ -283,7 +284,6 @@ void MainComponent::timerCallback(){
     
     if(spotifyPollCounter >= 40){
         spotifyPollCounter = 0;
-        spotifyClient.poll();
         updateSpotifyUi();
     }
 }

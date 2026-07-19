@@ -127,6 +127,7 @@ juce::var SpotifyClient::apiPost(
 SpotifyClient::SpotifyClient() = default;
 
 SpotifyClient::~SpotifyClient(){
+    stopPolling();
     disconnect();
 
     if(serverThread.joinable())
@@ -136,6 +137,32 @@ SpotifyClient::~SpotifyClient(){
 // Auth ===================== 
 bool SpotifyClient::isAuthenticated() const {
     return authenticated;
+}
+
+void SpotifyClient::startPolling(){
+    if(pollRunning)
+        return;
+
+    pollRunning = true;
+
+    pollThread = std::thread([this]{
+        while(pollRunning){
+            poll();
+
+            if(onStateChanged)
+                juce::MessageManager::callAsync(onStateChanged);
+
+            for(int i = 0; i < 40 && pollRunning; i++)
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+    });
+}
+
+void SpotifyClient::stopPolling(){
+    pollRunning = false;
+
+    if(pollThread.joinable())
+        pollThread.join();
 }
 
 void SpotifyClient::startAuth(){
@@ -400,12 +427,13 @@ void SpotifyClient::startCallbackServer(){
         }
 
         auto clientSocket = accept(listenSocket, nullptr, nullptr);
-        closesocket(listenSocket);
 
         {
             const juce::ScopedLock sl(lock);
             serverSocketHandle = 0;
         }
+
+        closesocket(listenSocket);
 
         if(clientSocket == INVALID_SOCKET){
             if(onStateChanged) 

@@ -47,6 +47,8 @@ private:
 
     juce::String codeVerifier;
     std::thread serverThread;
+    std::thread pollThread;
+    std::atomic<bool> pollRunning{false};
     uintptr_t serverSocketHandle = 0;
 
     SpotifyStatus status_{SpotifyStatus::Disconnected};
@@ -69,6 +71,8 @@ public:
     bool isAuthenticated() const;
     void startAuth();
     void disconnect();
+    void startPolling();
+    void stopPolling();
     void loadTokens(const AppSettings &);
     void saveTokens(AppSettings &) const;
     bool isPlaying() const;
