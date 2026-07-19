@@ -5,6 +5,16 @@
 #include <juce_cryptography/juce_cryptography.h>
 #include <juce_events/juce_events.h>
 
+namespace {
+    juce::String loadAuthPage(const char* filename){
+        auto dir = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getParentDirectory().getChildFile("auth");
+        auto html = dir.getChildFile(filename).loadFileAsString();
+        auto css = dir.getChildFile("style.css").loadFileAsString();
+
+        return html.replace("</title>", "</title><style>" + css + "</style>", false);
+    }
+}
+
 // PCKE Code verifier =====================
 juce::String SpotifyClient::generateCodeVerifier(){
     juce::Random rng;
@@ -306,9 +316,7 @@ void SpotifyClient::startCallbackServer(){
                                    "Content-Type: text/html\r\n"
                                    "Connection: close\r\n"
                                    "\r\n"
-                                   "<html><body style='background:#1a1d23;color:#e4e4e7;font-family:sans-serif;"
-                                   "display:flex;align-items:center;justify-content:center;height:100vh'>"
-                                   "<h2>Connected! You can close this tab.</h2></body></html>";
+                                   + loadAuthPage("success.html");
 
             client->write(response.getCharPointer(), response.length());
         } 
@@ -317,9 +325,7 @@ void SpotifyClient::startCallbackServer(){
                                    "Content-Type: text/html\r\n"
                                    "Connection: close\r\n"
                                    "\r\n"
-                                   "<html><body style='background:#1a1d23;color:#e4e4e7;font-family:sans-serif;"
-                                   "display:flex;align-items:center;justify-content:center;height:100vh'>"
-                                   "<h2>Authorization failed or denied.</h2></body></html>";
+                                   + loadAuthPage("error.html");
 
             client->write(response.getCharPointer(), response.length());
         }

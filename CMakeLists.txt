@@ -66,6 +66,13 @@ target_compile_definitions(AudioMixer
     PRIVATE
         AUDIO_MIXER_VERSION="${PROJECT_VERSION}")
 
+add_custom_command(TARGET AudioMixer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/core/auth"
+        "$<TARGET_FILE_DIR:AudioMixer>/auth"
+    COMMENT "Copying auth pages to output directory"
+)
+
 # ── Tests ──────────────────────────────────────────────────────
 enable_testing()
 
