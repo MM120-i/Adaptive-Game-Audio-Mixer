@@ -1,15 +1,15 @@
 #pragma once
 
 #include <functional>
+#include <thread>
 
 #include "AppSettings.h"
 #include <juce_core/juce_core.h>
 
-#define BUFFER_SIZE 4096
-
 namespace {
     constexpr int CONNECTION_TIMEOUT_MS = 5000;
     constexpr int PORT = 8888;
+    constexpr int BUFFER_SIZE = 4096;
 }
 
 class SpotifyClient {
@@ -45,6 +45,7 @@ private:
 
     juce::String codeVerifier;
     std::thread serverThread;
+    juce::StreamingSocket* serverSocket = nullptr;
 
     static constexpr auto kTokenUrl = "https://accounts.spotify.com/api/token";
     static constexpr auto kApiBase = "https://api.spotify.com/v1";

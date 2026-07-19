@@ -13,7 +13,7 @@ juce::String SpotifyClient::generateCodeVerifier(){
     static constexpr auto chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
     for(size_t i = 0; i < 64; i++)
-        verifier += chars[rng.nextInt(65)];
+        verifier += chars[rng.nextInt(66)];
     
     return verifier;
 }
@@ -140,6 +140,9 @@ void SpotifyClient::startAuth(){
 void SpotifyClient::disconnect(){
     const juce::ScopedLock sl(lock);
 
+    if(serverSocket)
+        serverSocket->close();
+
     authenticated = false;
     accessToken.clear();
     refreshToken.clear();
@@ -258,17 +261,31 @@ void SpotifyClient::exchangeCodeForTokens(const juce::String &code){
 void SpotifyClient::startCallbackServer(){
     if(serverThread.joinable())
         serverThread.join();
-    
-    serverThread = std::thread([this] {
-        juce::StreamingSocket server;
-        
-        if(!server.createListener(PORT, "127.0.0.1"))
-            return;
 
-        auto *client = server.waitForNextConnection();
+    auto* socket = new juce::StreamingSocket();
 
-        if(!client)
+    if(!socket->createListener(PORT, "127.0.0.1")){
+        delete socket;
+        return;
+    }
+
+    {
+        const juce::ScopedLock sl(lock);
+        serverSocket = socket;
+    }
+
+    serverThread = std::thread([this, socket] {
+        auto* client = socket->waitForNextConnection();
+
+        {
+            const juce::ScopedLock sl(lock);
+            serverSocket = nullptr;
+        }
+
+        if(!client){
+            delete socket;
             return;
+        }
 
         char buf[BUFFER_SIZE] = {};
         client->read(buf, sizeof(buf) - 1, false);
@@ -284,19 +301,31 @@ void SpotifyClient::startCallbackServer(){
                     : codeEnd
             );
             exchangeCodeForTokens(code);
+
+            const juce::String response = "HTTP/1.1 200 OK\r\n"
+                                   "Content-Type: text/html\r\n"
+                                   "Connection: close\r\n"
+                                   "\r\n"
+                                   "<html><body style='background:#1a1d23;color:#e4e4e7;font-family:sans-serif;"
+                                   "display:flex;align-items:center;justify-content:center;height:100vh'>"
+                                   "<h2>Connected! You can close this tab.</h2></body></html>";
+
+            client->write(response.getCharPointer(), response.length());
+        } 
+        else {
+            const juce::String response = "HTTP/1.1 400 Bad Request\r\n"
+                                   "Content-Type: text/html\r\n"
+                                   "Connection: close\r\n"
+                                   "\r\n"
+                                   "<html><body style='background:#1a1d23;color:#e4e4e7;font-family:sans-serif;"
+                                   "display:flex;align-items:center;justify-content:center;height:100vh'>"
+                                   "<h2>Authorization failed or denied.</h2></body></html>";
+
+            client->write(response.getCharPointer(), response.length());
         }
 
-        // TODO: Make a html and css file with this content in it
-        const juce::String response = "HTTP/1.1 200 OK\r\n"
-                               "Content-Type: text/html\r\n"
-                               "Connection: close\r\n"
-                               "\r\n"
-                               "<html><body style='background:#1a1d23;color:#e4e4e7;font-family:sans-serif;"
-                               "display:flex;align-items:center;justify-content:center;height:100vh'>"
-                               "<h2>Connected! You can close this tab.</h2></body></html>";
-
-        client->write(response.getCharPointer(), response.length());
         delete client;
+        delete socket;
 
         if(onStateChanged)
             juce::MessageManager::callAsync(onStateChanged);

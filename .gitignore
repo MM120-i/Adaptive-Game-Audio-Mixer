@@ -8,4 +8,3 @@ CMakeUserPresets.json
 *.txt
 
 .env
-spotify_config.h.in

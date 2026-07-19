@@ -67,8 +67,10 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
 
     if (object->hasProperty("spotifyTokenExpiry"))
         settings.spotifyTokenExpiry = static_cast<juce::int64>(object->getProperty("spotifyTokenExpiry"));
-    else
+    else {
         settings.spotifyTokenExpiry = 0;
+        usedDefaults = true;
+    }
 
     return settings;
 }
