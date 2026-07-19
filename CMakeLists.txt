@@ -84,6 +84,7 @@ target_sources(AudioMixerTests
         tests/LevelMeterTest.cpp
         tests/AppSettingsTest.cpp
         tests/VolumeControlTest.cpp
+        tests/SpotifyClientTest.cpp
         src/ui/VolumeControl.cpp
         src/ui/VolumeControl.h
         src/ui/LevelMeter.cpp
@@ -94,15 +95,19 @@ target_sources(AudioMixerTests
         src/core/SettingsStore.h
         src/core/AppLogger.cpp
         src/core/AppLogger.h
+        src/core/SpotifyClient.cpp
+        src/core/SpotifyClient.h
 )
 
 target_include_directories(AudioMixerTests
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR})
 
 target_link_libraries(AudioMixerTests
     PRIVATE
         juce::juce_gui_extra
-        juce::juce_data_structures)
+        juce::juce_data_structures
+        juce::juce_cryptography)
 
 add_test(NAME AudioMixerTests COMMAND AudioMixerTests)

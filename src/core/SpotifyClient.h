@@ -6,11 +6,13 @@
 #include "AppSettings.h"
 #include <juce_core/juce_core.h>
 
-namespace {
-    constexpr int CONNECTION_TIMEOUT_MS = 5000;
-    constexpr int PORT = 8888;
-    constexpr int BUFFER_SIZE = 4096;
-}
+enum class SpotifyStatus {
+    Disconnected,
+    Connecting, 
+    Connected,
+    NoActiveDevice,
+    Error,
+};
 
 class SpotifyClient {
 private:
@@ -45,7 +47,11 @@ private:
 
     juce::String codeVerifier;
     std::thread serverThread;
-    juce::StreamingSocket* serverSocket = nullptr;
+    juce::StreamingSocket *serverSocket = nullptr;
+
+    SpotifyStatus status_{SpotifyStatus::Disconnected};
+    juce::String lastErrorMessage_;
+    bool deviceActive_ = false;
 
     static constexpr auto kTokenUrl = "https://accounts.spotify.com/api/token";
     static constexpr auto kApiBase = "https://api.spotify.com/v1";
@@ -68,7 +74,11 @@ public:
     bool isPlaying() const;
     int  deviceVolume() const;
     void poll();
+    bool hasActiveDevice() const;
 
+    SpotifyStatus status() const;
+
+    juce::String lastErrorMessage() const;
     juce::String trackTitle() const;
     juce::String trackArtist() const;
     juce::String albumName() const;

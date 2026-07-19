@@ -6,7 +6,11 @@
 #include <juce_events/juce_events.h>
 
 namespace {
-    juce::String loadAuthPage(const char* filename){
+    constexpr int CONNECTION_TIMEOUT_MS = 5000;
+    constexpr int PORT = 8888;
+    constexpr int BUFFER_SIZE = 4096;
+
+    juce::String loadAuthPage(const char *filename){
         auto dir = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getParentDirectory().getChildFile("auth");
         auto html = dir.getChildFile(filename).loadFileAsString();
         auto css = dir.getChildFile("style.css").loadFileAsString();
@@ -133,6 +137,13 @@ bool SpotifyClient::isAuthenticated() const {
 
 void SpotifyClient::startAuth(){
     codeVerifier = generateCodeVerifier();
+
+    {
+        const juce::ScopedLock sl(lock);
+        status_ = SpotifyStatus::Connecting;
+        lastErrorMessage_.clear();
+    }
+
     const auto challenge = generateCodeChallenge(codeVerifier);
     juce::URL authUrl(kAuthorizeUrl);
 
@@ -164,6 +175,9 @@ void SpotifyClient::disconnect(){
     currentAlbumArtUrl.clear();
     currentDeviceName.clear();
     currentVolume = 0;
+    status_ = SpotifyStatus::Disconnected;
+    lastErrorMessage_.clear();
+    deviceActive_ = false;
 }
 
 void SpotifyClient::loadTokens(const AppSettings &settings){
@@ -186,8 +200,15 @@ void SpotifyClient::loadTokens(const AppSettings &settings){
         }
     }
 
-    if(needsRefresh)
+    if(needsRefresh){
         refreshAccessToken();
+    }
+    else {
+        const juce::ScopedLock sl(lock);
+
+        if(authenticated)
+            status_ = SpotifyStatus::Connected;
+    }
 }
 
 void SpotifyClient::saveTokens(AppSettings &settings) const {
@@ -213,11 +234,12 @@ void SpotifyClient::refreshAccessToken(){
     form.set("client_id", SPOTIFY_CLIENT_ID);
 
     const auto json = httpPostForm(kTokenUrl, form);
-
     const juce::ScopedLock sl(lock);
 
     if(!json.isObject()){
         authenticated = false;
+        status_ = SpotifyStatus::Error;
+        lastErrorMessage_ = "Token refresh failed - please reconnect";
         return;
     }
 
@@ -225,6 +247,7 @@ void SpotifyClient::refreshAccessToken(){
 
     if(!obj || !obj->hasProperty("access_token")){
         authenticated = false;
+        status_ = SpotifyStatus::Error;
         return;
     }
 
@@ -236,6 +259,7 @@ void SpotifyClient::refreshAccessToken(){
         refreshToken = obj->getProperty("refresh_token").toString();
 
     authenticated = true;
+    status_ = SpotifyStatus::Connected;
 }
 
 void SpotifyClient::exchangeCodeForTokens(const juce::String &code){
@@ -250,13 +274,17 @@ void SpotifyClient::exchangeCodeForTokens(const juce::String &code){
 
     const auto json = httpPostForm(kTokenUrl, form);
 
-    if(!json.isObject())
+    if(!json.isObject()){
+        status_ = SpotifyStatus::Error;
         return;
+    }
 
     const auto *obj = json.getDynamicObject();
 
-    if(!obj)
+    if(!obj){
+        status_ = SpotifyStatus::Error;
         return;
+    }
     
     const juce::ScopedLock sl(lock);
 
@@ -265,6 +293,14 @@ void SpotifyClient::exchangeCodeForTokens(const juce::String &code){
     const auto expiresIn = static_cast<int>(obj->getProperty("expires_in"));
     tokenExpiry = juce::Time::getApproximateMillisecondCounter() + (expiresIn - 30) * 1000;
     authenticated = !accessToken.isEmpty();
+
+    if(authenticated){
+        status_ = SpotifyStatus::Connected;
+    }
+    else {
+        status_ = SpotifyStatus::Error;
+        lastErrorMessage_ = "Failed to exchange authorization code";
+    }
 }
 
 // Callback Server =====================
@@ -362,10 +398,15 @@ void SpotifyClient::poll(){
 
         {
             const juce::ScopedLock sl(lock);
-            if(!authenticated) return;
+
+            if(!authenticated) 
+                return;
+
             localToken = accessToken;
         }
     }
+
+    bool networkOk = true;
 
     const auto playbackJson = httpGet(
         juce::String(kApiBase) + "/me/player/currently-playing",
@@ -380,6 +421,9 @@ void SpotifyClient::poll(){
             parsePlaybackState(parsed);
         }
     }
+    else{
+        networkOk = false;
+    }
 
     const auto devicesJson = httpGet(
         juce::String(kApiBase) + "/me/player/devices",
@@ -392,6 +436,24 @@ void SpotifyClient::poll(){
         if(parsed.isObject()){
             const juce::ScopedLock sl(lock);
             parseDevices(parsed);
+        }
+    }
+    else{
+        networkOk = false;
+    }
+
+    {
+        const juce::ScopedLock sl(lock);
+
+        if(!networkOk){
+            status_ = SpotifyStatus::Error;
+            lastErrorMessage_ = "Cannot reach Spotify - check your internet";
+        }
+        else if(!deviceActive_){
+            status_ = SpotifyStatus::NoActiveDevice;
+        }
+        else{
+            status_ = SpotifyStatus::Connected;
         }
     }
 }
@@ -431,14 +493,22 @@ void SpotifyClient::parseDevices(const juce::var &json){
     if(!devices.isArray())
         return;
 
+    deviceActive_ = false;
+
     for(size_t i = 0; i < devices.size(); i++){
         const auto device = devices[i];
 
         if(device.getProperty("is_active", juce::var())){
             currentDeviceName = device.getProperty("name", juce::var()).toString();
             currentVolume = static_cast<int>(device.getProperty("volume_percent", juce::var()));
+            deviceActive_ = true;
             break;
         }
+    }
+
+    if(!deviceActive_){
+        currentDeviceName.clear();
+        currentVolume = 0;
     }
 }
 
@@ -477,4 +547,19 @@ bool SpotifyClient::isPlaying() const {
 int SpotifyClient::deviceVolume() const { 
     const juce::ScopedLock sl(lock); 
     return currentVolume; 
+}
+
+SpotifyStatus SpotifyClient::status() const {
+    const juce::ScopedLock sl(lock);
+    return status_;
+}
+
+juce::String SpotifyClient::lastErrorMessage() const {
+    const juce::ScopedLock sl(lock);
+    return lastErrorMessage_;
+}
+
+bool SpotifyClient::hasActiveDevice() const {
+    const juce::ScopedLock sl(lock);
+    return deviceActive_;
 }

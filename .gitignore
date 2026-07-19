@@ -8,3 +8,7 @@ CMakeUserPresets.json
 *.txt
 
 .env
+Building
+Cleaning
+Configuring
+Testing/
