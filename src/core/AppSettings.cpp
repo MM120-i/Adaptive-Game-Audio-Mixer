@@ -50,10 +50,9 @@ AppSettings AppSettings::createDefaults() {
 AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
     auto settings = createDefaults();
     usedDefaults = false;
-
     const auto *object = json.getDynamicObject();
 
-    if (object == nullptr) {
+    if (!object) {
         usedDefaults = true;
         return settings;
     }
@@ -65,8 +64,9 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
     settings.spotifyAccessToken  = readString (*object, "spotifyAccessToken",  {}, usedDefaults);
     settings.spotifyRefreshToken = readString (*object, "spotifyRefreshToken", {}, usedDefaults);
 
-    if (object->hasProperty("spotifyTokenExpiry"))
+    if (object->hasProperty("spotifyTokenExpiry")){
         settings.spotifyTokenExpiry = static_cast<juce::int64>(object->getProperty("spotifyTokenExpiry"));
+    }
     else {
         settings.spotifyTokenExpiry = 0;
         usedDefaults = true;
@@ -77,6 +77,7 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
 
 juce::var AppSettings::toJson() const {
     auto object = std::make_unique<juce::DynamicObject>();
+    
     object->setProperty("windowWidth", windowWidth);
     object->setProperty("windowHeight", windowHeight);
     object->setProperty("verboseDiagnostics", verboseDiagnostics);

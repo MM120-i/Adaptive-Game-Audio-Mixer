@@ -3,7 +3,7 @@
 #include <functional>
 #include <juce_core/juce_core.h>
 
-class AppLogger{
+class AppLogger {
 public:
     using DiagnosticsSink = std::function<void(const juce::String &)>;
 
