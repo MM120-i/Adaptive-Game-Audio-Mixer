@@ -1,7 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Find cmake
 set CMAKE=
 if exist "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" (
     set CMAKE="C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
@@ -19,17 +18,16 @@ if /i "%1"=="help" (
     echo --------------------------------------------------
     echo   AudioMixer  -  available targets
     echo --------------------------------------------------
-    echo   .\make.bat             build app + tests ^(Debug^)
-    echo   .\make.bat Debug       build specific config
-    echo   .\make.bat run         launch the app
-    echo   .\make.bat run Debug   launch Release config
-    echo   .\make.bat test        build + run tests
-    echo   .\make.bat clean       delete build/ directory
-    echo   .\make.bat help        show this message
+    echo   .\build.bat             build app + tests ^(Debug^)
+    echo   .\build.bat Debug       build specific config
+    echo   .\build.bat run         launch the app
+    echo   .\build.bat run Debug   launch Release config
+    echo   .\build.bat test        build + run tests
+    echo   .\build.bat clean       delete build/ directory
+    echo   .\build.bat help        show this message
     echo --------------------------------------------------
     echo   ^>^> also available:
     echo   .\test.ps1             build + verbose tests
-    echo   make                   ^(Makefile, same targets^)
     echo --------------------------------------------------
     exit /b 0
 )
@@ -45,9 +43,10 @@ if /i "%1"=="run" (
     set RUNCONFIG=Debug
     if not "%2"=="" set RUNCONFIG=%2
     if not exist "build\AudioMixer_artefacts\!RUNCONFIG!\AudioMixer.exe" (
-        echo App not built. Run: .\make.bat !RUNCONFIG! first.
+        echo App not built. Run: .\build.bat !RUNCONFIG! first.
         exit /b 1
     )
+
     echo ==> Launching AudioMixer ^(!RUNCONFIG!^)...
     start "" "build\AudioMixer_artefacts\!RUNCONFIG!\AudioMixer.exe"
     exit /b 0
@@ -60,6 +59,7 @@ if /i "%1"=="test" (
         %CMAKE% -S . -B build -G "Visual Studio 18 2026" -A x64
         if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
     )
+
     echo ==> Building + testing ^(!CONFIG!^)...
     %CMAKE% --build build --config !CONFIG! --target AudioMixerTests --parallel
     if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
