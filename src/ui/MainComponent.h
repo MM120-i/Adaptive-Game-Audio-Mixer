@@ -5,6 +5,7 @@
 #include "audio/AudioCaptureEngine.h"
 #include "LevelMeter.h"
 #include "core/SettingsStore.h"
+#include "core/SpotifyClient.h"
 #include "VolumeControl.h"
 
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -24,9 +25,11 @@ private:
     void saveSettingsFromUi();
     void reloadSettingsIntoUi();
     void updateCaptureStatus();
+    void updateSpotifyUi();
     void timerCallback() override;
 
     VolumeControl volumeControl;
+    SpotifyClient spotifyClient;
 
     AppSettings &settings;
     const SettingsStore &settingsStore;
@@ -48,13 +51,15 @@ private:
     LevelMeter levelMeter;
     juce::Label volumeSectionLabel;
     juce::Label nowPlayingSectionLabel;
-    juce::Label nowPlayingLabel;
     juce::Label diagnosticsSectionLabel;
     
     juce::TextEditor diagnosticsEditor;
     juce::ToggleButton verboseDiagnosticsToggle{"Verbose logs"};
     juce::TextButton saveSettingsButton{"Save"};
     juce::TextButton reloadSettingsButton{"Reload"};
+    juce::TextButton spotifyConnectButton{"Connect Spotify"};
+    juce::Label spotifyStatusLabel;
+    int spotifyPollCounter = 0;
 
     bool wasCapturing = false;
 

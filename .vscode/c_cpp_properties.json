@@ -5,7 +5,8 @@
       "includePath": [
         "${workspaceFolder}/src",
         "${workspaceFolder}/third_party/JUCE/modules",
-        "${workspaceFolder}/build/AudioMixer_artefacts/JuceLibraryCode"
+        "${workspaceFolder}/build/AudioMixer_artefacts/JuceLibraryCode",
+        "${workspaceFolder}/build"
       ],
       "defines": [
         "AUDIO_MIXER_VERSION=\"0.1.0\"",

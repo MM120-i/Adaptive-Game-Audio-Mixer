@@ -5,5 +5,10 @@ CMakeUserPresets.json
 *.user
 *.suo
 *.log
-
 *.txt
+
+.env
+Building
+Cleaning
+Configuring
+Testing/
