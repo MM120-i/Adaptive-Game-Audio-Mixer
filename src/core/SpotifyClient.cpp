@@ -152,7 +152,7 @@ void SpotifyClient::startPolling(){
             if(onStateChanged)
                 juce::MessageManager::callAsync(onStateChanged);
 
-            for(int i = 0; i < 40 && pollRunning; i++)
+            for(size_t i = 0; i < 40 && pollRunning; i++)
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     });
