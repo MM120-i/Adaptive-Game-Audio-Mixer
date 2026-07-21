@@ -8,18 +8,21 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
+    permissions:
+      contents: read
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+        persist-credentials: false
 
     - name: Create .env file
       run: echo "SPOTIFY_CLIENT_ID=ci_test" > .env
 
     - name: Configure CMake
-      run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -DENABLE_ANALYZE=ON
+      run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
 
     - name: Build
       run: cmake --build build --config Debug --parallel

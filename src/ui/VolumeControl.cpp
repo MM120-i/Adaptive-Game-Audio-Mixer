@@ -1,5 +1,7 @@
 #include "VolumeControl.h"
 
+#include <algorithm>
+
 namespace {
     constexpr int buttonSize = 28;
     constexpr int labelWidth = 52;
@@ -72,7 +74,38 @@ void VolumeControl::setVolume(int percent){
     volumeLabel.setText(juce::String(currentVolume) + "%", juce::dontSendNotification);
 }
 
+// TODO: refactor - Large if block
 void VolumeControl::timerCallback(){
+    if(animating_){
+        animProgress_ += 16.0f / static_cast<float>(animDuration_);
+
+        if(animProgress_ >= 1.0f){
+            animProgress_ = 1.0f;
+            animating_ = false;
+            stopTimer();
+        }
+
+        float t = animProgress_;
+        float eased = (t < 0.5f) ? (2.0f * t * t) : (-1.0f + (4.0f - 2.0f * t) * t);
+        float value = animStart_ + (animTarget_ - animStart_) * eased;
+        int intVal = static_cast<int>(value);
+
+        currentVolume = intVal;
+        volumeSlider.setValue(value, juce::dontSendNotification);
+        volumeLabel.setText(juce::String(intVal) + "%", juce::dontSendNotification);
+
+        if(!animating_){
+            lastCommited = currentVolume;
+
+            if(commitCallback)
+                commitCallback(currentVolume);
+
+            pendingVolume = currentVolume;
+        }
+
+        return;
+    }
+
     stopTimer();
 
     if(pendingVolume == lastCommited)
@@ -117,4 +150,28 @@ void VolumeControl::resized(){
 
 void VolumeControl::paint(juce::Graphics &g){
     g.fillAll(juce::Colour{0xff1a1d23});
+}
+
+void VolumeControl::animateToVolume(int target, int durationMs){
+    if(durationMs <= 0){
+        setVolume(target);
+        return;
+    }
+
+    stopTimer();
+
+    const auto clampedTarget = std::clamp(target, 0, 100);
+
+    if(muted && clampedTarget > 0){
+        muted = false;
+        preMuteVolume = clampedTarget;
+        muteButton.setColour(juce::TextButton::buttonColourId, accentColour);
+    }
+
+    animStart_ = static_cast<float>(currentVolume);
+    animTarget_ = static_cast<float>(clampedTarget);
+    animProgress_ = 0.0f;
+    animDuration_ = durationMs;
+    animating_ = true;
+    startTimer(16);
 }

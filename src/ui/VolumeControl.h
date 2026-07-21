@@ -14,9 +14,16 @@ public:
     }
 
     void setVolume(int);
-    int getVolume() const { return currentVolume; }
-    bool isMuted() const { return muted; }
 
+    int getVolume() const { 
+        return currentVolume; 
+    }
+
+    bool isMuted() const { 
+        return muted; 
+    }
+
+    void animateToVolume(int, int = 300);
     void resized() override;
     void paint(juce::Graphics &) override;
 
@@ -32,6 +39,12 @@ private:
     int pendingVolume = 65;
     int lastCommited = -1;
     bool muted = false;
+
+    bool animating_ = false;
+    float animStart_ = 0.0f;
+    float animTarget_ = 0.0f;
+    float animProgress_ = 0.0f;
+    int animDuration_ = 300;
 
     CommitCallback commitCallback;
 

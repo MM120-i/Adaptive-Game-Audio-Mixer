@@ -161,19 +161,17 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     addAndMakeVisible(spotifyStatusLabel);
 
     spotifyClient.onStateChanged = [this]{
-        juce::MessageManager::callAsync([this]{
-            const auto newStatus = spotifyClient.status();
+        const auto newStatus = spotifyClient.status();
 
-            if(newStatus != lastSpotifyStatus){
-                lastSpotifyStatus = newStatus;
-                spotifyClient.saveTokens(settings);
+        if(newStatus != lastSpotifyStatus){
+            lastSpotifyStatus = newStatus;
+            spotifyClient.saveTokens(settings);
 
-                if(newStatus == SpotifyStatus::Connected)
-                    spotifyClient.fetchDeviceVolume();
-            }
+            if(newStatus == SpotifyStatus::Connected)
+                spotifyClient.fetchDeviceVolume();
+        }
 
-            updateSpotifyUi();
-        });
+        updateSpotifyUi();
     };
 
     prevButton.onClick = [this]{
@@ -191,7 +189,24 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     };
     addAndMakeVisible(nextButton);
 
+    for(size_t i = 0; i < settings.volumePresets.size(); i++){
+        const auto &preset = settings.volumePresets[i];
+        auto *btn = presetButtons.emplace_back(std::make_unique<PresetButton>(preset.name)).get();
+
+        btn->onClick = [this, vol = preset.volume] {
+            volumeControl.animateToVolume(vol, 300);
+        };
+
+        addAndMakeVisible(btn);
+    }
+
     spotifyClient.loadTokens(settings);
+
+    if(settings.defaultPresetIndex >= 0 && settings.defaultPresetIndex < settings.volumePresets.size()){
+        const auto &dp = settings.volumePresets[settings.defaultPresetIndex];
+        volumeControl.setVolume(dp.volume);
+    }
+
     spotifyClient.startPolling();
 
     updateSpotifyUi();
@@ -221,7 +236,7 @@ void MainComponent::resized(){
 
     const auto captureWidth = area.getWidth() * 0.56f;
     const auto volumeWidth  = area.getWidth() - captureWidth - static_cast<float>(gap);
-    auto row = area.removeFromTop(195.0f);
+    auto row = area.removeFromTop(230.0f);
 
     captureCardRect = row.removeFromLeft(captureWidth);
     auto capInner = captureCardRect.reduced(innerPad);
@@ -248,7 +263,23 @@ void MainComponent::resized(){
     volumeSectionLabel.setText("Volume", juce::dontSendNotification);
     volumeSectionLabel.setBounds(volInner.removeFromTop(18.0f).toNearestInt());
     volInner.removeFromTop(6.0f);
-    volumeControl.setBounds(volInner.toNearestInt());
+
+    auto vcRect = volInner.removeFromTop(70.0f);
+    volumeControl.setBounds(vcRect.toNearestInt());
+
+    volInner.removeFromTop(6.0f);
+
+    if(!presetButtons.empty()){
+        auto presetRow = volInner.removeFromTop(static_cast<float>(controlHeight));
+        const auto btnCount = static_cast<int>(presetButtons.size());
+        const auto btnWidth = (presetRow.getWidth() - (btnCount - 1) * 6.0f) / static_cast<float>(btnCount);
+
+        for(auto &btn : presetButtons){
+            btn->setBounds(presetRow.removeFromLeft(btnWidth).toNearestInt());
+            presetRow.removeFromLeft(6.0f);
+        }
+    }
+
     area.removeFromTop(static_cast<float>(gap));
     nowPlayingCardRect = area.removeFromTop(140.0f);
 

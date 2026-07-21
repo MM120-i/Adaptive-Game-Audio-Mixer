@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "core/AppLogger.h"
 #include "core/AppSettings.h"
 #include "audio/AudioCaptureEngine.h"
@@ -9,6 +10,22 @@
 #include "VolumeControl.h"
 
 #include <juce_gui_extra/juce_gui_extra.h>
+
+class PresetButton : public juce::TextButton {
+public:
+    using juce::TextButton::TextButton;
+    std::function<void()> onRightClick;
+
+private:
+    void mouseDown(const juce::MouseEvent &e) override {
+        if(e.mods.isRightButtonDown() && onRightClick){
+            onRightClick();
+            return;
+        }
+
+        juce::TextButton::mouseDown(e);
+    }
+};
 
 class MainComponent final : public juce::Component, private juce::Timer {
 private:
@@ -67,6 +84,8 @@ public:
     void paint(juce::Graphics &) override;
     void resized() override;
     void appendDiagnosticsMessage(const juce::String &);
+
+    std::vector<std::unique_ptr<PresetButton>> presetButtons;
 
     AudioCaptureEngine captureEngine;
 };
