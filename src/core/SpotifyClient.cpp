@@ -167,8 +167,10 @@ void SpotifyClient::startPolling(){
             if(onStateChanged)
                 juce::MessageManager::callAsync(onStateChanged);
 
-            for(size_t i = 0; i < 40 && pollRunning; i++)
+            for(size_t i = 0; i < 20 && pollRunning && !pollNow; i++)
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+            pollNow = false;
         }
     });
 }
@@ -699,8 +701,13 @@ void SpotifyClient::setVolume(int percent){
 
     apiPut("/me/player/volume?volume_percent=" + juce::String(percent));
 
-    const juce::ScopedLock sl(lock);
-    currentVolume = percent;
+    {
+        const juce::ScopedLock sl(lock);
+        currentVolume = percent;
+    }
+
+    if(onStateChanged)
+        juce::MessageManager::callAsync(onStateChanged);
 }
 
 void SpotifyClient::setPlaying(bool play){
@@ -712,8 +719,15 @@ void SpotifyClient::setPlaying(bool play){
     else
         apiPut("/me/player/pause");
 
-    const juce::ScopedLock sl(lock);
-    playing = play;
+    {
+        const juce::ScopedLock sl(lock);
+        playing = play;
+    }
+
+    pollNow = true;
+
+    if(onStateChanged)
+        juce::MessageManager::callAsync(onStateChanged);
 }
 
 void SpotifyClient::skipNext(){
@@ -721,6 +735,10 @@ void SpotifyClient::skipNext(){
         return;
 
     apiPost("/me/player/next");
+    pollNow = true;
+
+    if(onStateChanged)
+        juce::MessageManager::callAsync(onStateChanged);
 }
 
 void SpotifyClient::skipPrevious(){
@@ -728,4 +746,26 @@ void SpotifyClient::skipPrevious(){
         return;
         
     apiPost("/me/player/previous");
+    pollNow = true;
+
+    if(onStateChanged)
+        juce::MessageManager::callAsync(onStateChanged);
+}
+
+void SpotifyClient::fetchDeviceVolume(){
+    if(!authenticated)
+        return;
+
+    const auto devicesJson = httpRequest(
+        juce::String(kApiBase) + "/me/player/devices",
+        juce::StringArray("Authorization: Bearer " + accessToken)
+    );
+
+    if(devicesJson.isNotEmpty()){
+        const auto parsed = juce::JSON::parse(devicesJson);
+        if(parsed.isObject()){
+            const juce::ScopedLock sl(lock);
+            parseDevices(parsed);
+        }
+    }
 }

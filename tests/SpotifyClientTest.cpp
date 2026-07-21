@@ -228,6 +228,25 @@ public:
             SpotifyClient client;
             expectEquals(client.deviceVolume(), 0);
         }
+
+        beginTest("fetchDeviceVolume --- no-op when not authenticated");
+        {
+            SpotifyClient client;
+            client.fetchDeviceVolume();  
+            expectEquals(client.deviceVolume(), 0);
+        }
+
+        beginTest("fetchDeviceVolume --- does not crash when authenticated");
+        {
+            SpotifyClient client;
+            AppSettings settings;
+            settings.spotifyAccessToken = "test_access";
+            settings.spotifyRefreshToken = "test_refresh";
+            settings.spotifyTokenExpiry = juce::Time::currentTimeMillis() + 60000;
+            client.loadTokens(settings);
+            client.fetchDeviceVolume(); 
+            expect(true);
+        }
     }
 };
 

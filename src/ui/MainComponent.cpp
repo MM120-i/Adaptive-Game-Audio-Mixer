@@ -162,7 +162,16 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
 
     spotifyClient.onStateChanged = [this]{
         juce::MessageManager::callAsync([this]{
-            spotifyClient.saveTokens(settings);
+            const auto newStatus = spotifyClient.status();
+
+            if(newStatus != lastSpotifyStatus){
+                lastSpotifyStatus = newStatus;
+                spotifyClient.saveTokens(settings);
+
+                if(newStatus == SpotifyStatus::Connected)
+                    spotifyClient.fetchDeviceVolume();
+            }
+
             updateSpotifyUi();
         });
     };
@@ -330,6 +339,8 @@ void MainComponent::updateSpotifyUi(){
         if(spotVol != volumeControl.getVolume())
             volumeControl.setVolume(spotVol);
     }
+
+    volumeControl.setEnabled(spotifyClient.isAuthenticated() && spotifyClient.hasActiveDevice());
 
     playPauseButton.setButtonText(spotifyClient.isPlaying()
         ? juce::String::fromUTF8("\xe2\x8f\xb8")

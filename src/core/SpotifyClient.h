@@ -50,6 +50,7 @@ private:
     std::thread serverThread;
     std::thread pollThread;
     std::atomic<bool> pollRunning{false};
+    std::atomic<bool> pollNow{false};
     uintptr_t serverSocketHandle = 0;
 
     SpotifyStatus status_{SpotifyStatus::Disconnected};
@@ -85,6 +86,7 @@ public:
     void setPlaying(bool);
     void skipNext();
     void skipPrevious();
+    void fetchDeviceVolume();
 
     SpotifyStatus status() const;
 

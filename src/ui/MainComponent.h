@@ -56,6 +56,7 @@ private:
     int spotifyPollCounter = 0;
     bool wasCapturing = false;
     bool volumeChanging_ = false;
+    SpotifyStatus lastSpotifyStatus = SpotifyStatus::Disconnected;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 
