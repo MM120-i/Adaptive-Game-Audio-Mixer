@@ -137,6 +137,9 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
         usedDefaults = true;
     }
 
+    if(object->hasProperty("defaultPresetIndex"))
+        settings.defaultPresetIndex = static_cast<int>(object->getProperty("defaultPresetIndex"));
+
     return settings;
 }
 
@@ -161,6 +164,7 @@ juce::var AppSettings::toJson() const {
     }
 
     object->setProperty("volumePresets", presetVars);
+    object->setProperty("defaultPresetIndex", defaultPresetIndex);
 
     return juce::var(object.release());
 }

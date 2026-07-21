@@ -93,6 +93,32 @@ public:
             expectEquals(defaults.volumePresets[3].name, juce::String("Full Send"));
             expectEquals(defaults.volumePresets[3].volume, 100);
         }
+
+        beginTest("default preset index --- round-trip");
+        {
+            AppSettings original;
+            original.defaultPresetIndex = 2;
+
+            bool usedDefaults = false;
+            const auto roundTripped = AppSettings::fromJson(original.toJson(), usedDefaults);
+
+            expect(usedDefaults == false);
+            expectEquals(roundTripped.defaultPresetIndex, 2);
+        }
+
+        beginTest("default preset index --- missing key falls to 0");
+        {
+            AppSettings settings;
+            settings.defaultPresetIndex = 5; 
+
+            auto *obj = new juce::DynamicObject();
+            juce::var json(obj);
+
+            bool usedDefaults = false;
+            const auto loaded = AppSettings::fromJson(json, usedDefaults);
+
+            expectEquals(loaded.defaultPresetIndex, 0);
+        }
     }
 };
 

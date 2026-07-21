@@ -11,6 +11,21 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
+class PresetButton : public juce::TextButton {
+public:
+    using juce::TextButton::TextButton;
+    std::function<void()> onRightClick;
+
+private:
+    void mouseDown(const juce::MouseEvent &e) override {
+        if(e.mods.isRightButtonDown())
+            if(onRightClick)
+                onRightClick();
+        else
+            juce::TextButton::mouseDown(e);
+    }
+};
+
 class MainComponent final : public juce::Component, private juce::Timer {
 private:
     void saveSettingsFromUi();
@@ -69,7 +84,7 @@ public:
     void resized() override;
     void appendDiagnosticsMessage(const juce::String &);
 
-    std::vector<std::unique_ptr<juce::TextButton>> presetButtons;
+    std::vector<std::unique_ptr<PresetButton>> presetButtons;
 
     AudioCaptureEngine captureEngine;
 };

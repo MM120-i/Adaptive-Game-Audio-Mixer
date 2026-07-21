@@ -161,19 +161,17 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     addAndMakeVisible(spotifyStatusLabel);
 
     spotifyClient.onStateChanged = [this]{
-        juce::MessageManager::callAsync([this]{
-            const auto newStatus = spotifyClient.status();
+        const auto newStatus = spotifyClient.status();
 
-            if(newStatus != lastSpotifyStatus){
-                lastSpotifyStatus = newStatus;
-                spotifyClient.saveTokens(settings);
+        if(newStatus != lastSpotifyStatus){
+            lastSpotifyStatus = newStatus;
+            spotifyClient.saveTokens(settings);
 
-                if(newStatus == SpotifyStatus::Connected)
-                    spotifyClient.fetchDeviceVolume();
-            }
+            if(newStatus == SpotifyStatus::Connected)
+                spotifyClient.fetchDeviceVolume();
+        }
 
-            updateSpotifyUi();
-        });
+        updateSpotifyUi();
     };
 
     prevButton.onClick = [this]{
@@ -191,11 +189,12 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     };
     addAndMakeVisible(nextButton);
 
-    for(const auto &preset : settings.volumePresets){
-        auto *btn = presetButtons.emplace_back(std::make_unique<juce::TextButton>(preset.name)).get();
-        
+    for(size_t i = 0; i < settings.volumePresets.size(); i++){
+        const auto &preset = settings.volumePresets[i];
+        auto *btn = presetButtons.emplace_back(std::make_unique<PresetButton>(preset.name)).get();
+
         btn->onClick = [this, vol = preset.volume] {
-            volumeControl.setVolume(vol);
+            volumeControl.animateToVolume(vol, 300);
             spotifyClient.setVolume(vol);
         };
 
@@ -203,6 +202,12 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     }
 
     spotifyClient.loadTokens(settings);
+
+    if(settings.defaultPresetIndex >= 0 && settings.defaultPresetIndex < settings.volumePresets.size()){
+        const auto &dp = settings.volumePresets[settings.defaultPresetIndex];
+        volumeControl.setVolume(dp.volume);
+    }
+
     spotifyClient.startPolling();
 
     updateSpotifyUi();

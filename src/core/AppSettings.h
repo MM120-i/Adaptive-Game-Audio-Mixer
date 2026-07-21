@@ -17,6 +17,7 @@ struct AppSettings {
     juce::String spotifyRefreshToken;
     juce::String spotifyAccessToken;
     juce::Array<VolumePreset> volumePresets;
+    int defaultPresetIndex = 0;
 
     static AppSettings createDefaults();
     static AppSettings fromJson(const juce::var &, bool &);
