@@ -54,6 +54,8 @@ target_sources(AudioMixer
         src/ui/VolumeControl.h
         src/core/SpotifyClient.cpp
         src/core/SpotifyClient.h
+        src/core/GlobalHotkeys.cpp
+        src/core/GlobalHotkeys.h
 )
 
 target_include_directories(AudioMixer
