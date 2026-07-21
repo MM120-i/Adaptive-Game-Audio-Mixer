@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Create .env file
+      run: echo "SPOTIFY_CLIENT_ID=ci_test" > .env
+
+    - name: Configure CMake
+      run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
+
+    - name: Build
+      run: cmake --build build --config Debug --parallel
+
+    - name: Run tests
+      run: ctest --test-dir build -C Debug --output-on-failure
