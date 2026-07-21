@@ -44,6 +44,12 @@ namespace {
 AppSettings AppSettings::createDefaults() {
     AppSettings settings;
     settings.lastLaunchTimestamp = juce::Time::getCurrentTime().toISO8601(true);
+
+    settings.volumePresets.add({"Game Focus", 30});
+    settings.volumePresets.add({"Balanced", 60});
+    settings.volumePresets.add({"Music Focus", 85});
+    settings.volumePresets.add({"Full Send", 100});
+
     return settings;
 }
 
@@ -111,6 +117,23 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
         usedDefaults = true;
     }
 
+    if(object->hasProperty("volumePresets")){
+        settings.volumePresets.clear();
+        const auto arr = object->getProperty("volumePresets");
+
+        if(arr.isArray()){
+            for(const auto &item : *arr.getArray()){
+                settings.volumePresets.add({
+                    item.getProperty("name", juce::var()).toString(),
+                    static_cast<int>(item.getProperty("volume", juce::var()))
+                });
+            }
+        }
+    }
+    else {
+        usedDefaults = true;
+    }
+
     return settings;
 }
 
@@ -124,6 +147,17 @@ juce::var AppSettings::toJson() const {
     object->setProperty("spotifyAccessToken", spotifyAccessToken);
     object->setProperty("spotifyRefreshToken", spotifyRefreshToken);
     object->setProperty("spotifyTokenExpiry", spotifyTokenExpiry);
+
+    juce::Array<juce::var> presetVars;
+
+    for(const auto &preset : volumePresets){
+        auto *obj = new juce::DynamicObject();
+        obj->setProperty("name", preset.name);
+        obj->setProperty("volume", preset.volume);
+        presetVars.add(juce::var(obj));
+    }
+
+    object->setProperty("volumePresets", presetVars);
 
     return juce::var(object.release());
 }

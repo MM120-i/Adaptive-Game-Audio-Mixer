@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "core/AppLogger.h"
 #include "core/AppSettings.h"
 #include "audio/AudioCaptureEngine.h"
@@ -67,6 +68,8 @@ public:
     void paint(juce::Graphics &) override;
     void resized() override;
     void appendDiagnosticsMessage(const juce::String &);
+
+    std::vector<std::unique_ptr<juce::TextButton>> presetButtons;
 
     AudioCaptureEngine captureEngine;
 };

@@ -68,6 +68,31 @@ public:
             expect(usedDefaults == true); 
             expectGreaterOrEqual(settings.windowWidth, 640); 
         }
+
+        beginTest("volume presets --- round-trip preserves all values");
+        {
+            AppSettings original;
+            original.volumePresets.clear();
+            original.volumePresets.add({"Test Preset", 42});
+
+            bool usedDefaults = false;
+            const auto roundTripped = AppSettings::fromJson(original.toJson(), usedDefaults);
+
+            expect(usedDefaults == false);
+            expectEquals(roundTripped.volumePresets.size(), 1);
+            expectEquals(roundTripped.volumePresets[0].name, juce::String("Test Preset"));
+            expectEquals(roundTripped.volumePresets[0].volume, 42);
+        }
+
+        beginTest("volume presets --- defaults contain four presets");
+        {
+            const auto defaults = AppSettings::createDefaults();
+            expectEquals(defaults.volumePresets.size(), 4);
+            expectEquals(defaults.volumePresets[0].name, juce::String("Game Focus"));
+            expectEquals(defaults.volumePresets[0].volume, 30);
+            expectEquals(defaults.volumePresets[3].name, juce::String("Full Send"));
+            expectEquals(defaults.volumePresets[3].volume, 100);
+        }
     }
 };
 
