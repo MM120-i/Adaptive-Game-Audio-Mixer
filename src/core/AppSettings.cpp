@@ -118,16 +118,19 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
     }
 
     if(object->hasProperty("volumePresets")){
-        settings.volumePresets.clear();
         const auto arr = object->getProperty("volumePresets");
 
         if(arr.isArray()){
-            for(const auto &item : *arr.getArray()){
+            settings.volumePresets.clear();
+
+            for(const auto &item : *arr.getArray())
                 settings.volumePresets.add({
                     item.getProperty("name", juce::var()).toString(),
                     static_cast<int>(item.getProperty("volume", juce::var()))
                 });
-            }
+        }
+        else {
+            usedDefaults = true;
         }
     }
     else {
