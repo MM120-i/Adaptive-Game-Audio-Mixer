@@ -15,13 +15,11 @@ jobs:
       with:
         submodules: recursive
 
-    - uses: microsoft/setup-msbuild@v2
-
     - name: Create .env file
       run: echo "SPOTIFY_CLIENT_ID=ci_test" > .env
 
     - name: Configure CMake
-      run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DENABLE_ANALYZE=ON
+      run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -DENABLE_ANALYZE=ON
 
     - name: Build
       run: cmake --build build --config Debug --parallel
