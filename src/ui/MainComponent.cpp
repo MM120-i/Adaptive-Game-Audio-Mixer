@@ -104,9 +104,10 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     addAndMakeVisible(volumeSectionLabel);
 
     volumeControl.setCommitCallback([this](int volumePercent){
-        logger.info("Volume set to: " + juce::String(volumePercent) + "%");
+        volumeChanging_ = true;
+        spotifyClient.setVolume(volumePercent);
+        volumeChanging_ = false;
     });
-
     addAndMakeVisible(volumeControl);
 
     nowPlayingSectionLabel.setFont(sectionFont());
@@ -165,6 +166,21 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
             updateSpotifyUi();
         });
     };
+
+    prevButton.onClick = [this]{
+        spotifyClient.skipPrevious();
+    };
+    addAndMakeVisible(prevButton);
+
+    playPauseButton.onClick = [this]{
+        spotifyClient.setPlaying(!spotifyClient.isPlaying());
+    };
+    addAndMakeVisible(playPauseButton);
+
+    nextButton.onClick = [this]{
+        spotifyClient.skipNext();
+    };
+    addAndMakeVisible(nextButton);
 
     spotifyClient.loadTokens(settings);
     spotifyClient.startPolling();
@@ -225,7 +241,7 @@ void MainComponent::resized(){
     volInner.removeFromTop(6.0f);
     volumeControl.setBounds(volInner.toNearestInt());
     area.removeFromTop(static_cast<float>(gap));
-    nowPlayingCardRect = area.removeFromTop(90.0f);
+    nowPlayingCardRect = area.removeFromTop(140.0f);
 
     auto npInner = nowPlayingCardRect.reduced(innerPad);
 
@@ -237,6 +253,14 @@ void MainComponent::resized(){
     spotifyConnectButton.setBounds(spotifyRow.removeFromLeft(140.0f).toNearestInt());
     spotifyRow.removeFromLeft(10.0f);
     spotifyStatusLabel.setBounds(spotifyRow.toNearestInt());
+
+    npInner.removeFromTop(6.0f);
+    auto transportRow = npInner.removeFromTop(static_cast<float>(controlHeight));
+    prevButton.setBounds(transportRow.removeFromLeft(60.0f).toNearestInt());
+    transportRow.removeFromLeft(8.0f);
+    playPauseButton.setBounds(transportRow.removeFromLeft(60.0f).toNearestInt());
+    transportRow.removeFromLeft(8.0f);
+    nextButton.setBounds(transportRow.removeFromLeft(60.0f).toNearestInt());
 
     area.removeFromTop(static_cast<float>(gap));
     diagCardRect = area;
@@ -300,6 +324,15 @@ void MainComponent::updateCaptureStatus(){
 }
 
 void MainComponent::updateSpotifyUi(){
+    if(!volumeChanging_){
+        const int spotVol = spotifyClient.deviceVolume();
+
+        if(spotVol != volumeControl.getVolume())
+            volumeControl.setVolume(spotVol);
+    }
+
+    playPauseButton.setButtonText(spotifyClient.isPlaying() ? "⏸" : "▶");
+
     const auto currentStatus = spotifyClient.status();
 
     if(currentStatus == SpotifyStatus::Error){

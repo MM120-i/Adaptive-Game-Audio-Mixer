@@ -18,7 +18,6 @@ public:
     SettingsLoadResult load() const;
     bool save (const AppSettings &, juce::String &) const;
 
-    juce::File getAppDataDirectory() const;
     juce::File getConfigFile() const;
     juce::File getLogFile() const;
 

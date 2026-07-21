@@ -10,6 +10,12 @@ if(MSVC)
     add_compile_options(/MP)
 endif()
 
+option(ENABLE_ANALYZE "Enable MSVC /analyze static code analysis" OFF)
+
+if(MSVC AND ENABLE_ANALYZE)
+    add_compile_options(/analyze)
+endif()
+
 file(STRINGS "${CMAKE_SOURCE_DIR}/.env" ENV_LINES)
 
 foreach(LINE ${ENV_LINES})

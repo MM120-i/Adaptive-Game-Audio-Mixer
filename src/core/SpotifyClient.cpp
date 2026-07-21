@@ -44,12 +44,16 @@ juce::String SpotifyClient::generateCodeChallenge(const juce::String &verifier){
 }
 
 // HTTP Helpers =====================
-juce::String SpotifyClient::httpGet(const juce::String &url, const juce::StringArray &extraHeaders){
+juce::String SpotifyClient::httpRequest(
+    const juce::String &url, 
+    const juce::StringArray &extraHeaders,
+    const juce::String &method
+){
     juce::URL req(url);
 
     auto base = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
                     .withConnectionTimeoutMs(CONNECTION_TIMEOUT_MS)
-                    .withHttpRequestCmd("GET");
+                    .withHttpRequestCmd(method);
 
     const auto options = extraHeaders.isEmpty() 
                ? base 
@@ -103,7 +107,7 @@ juce::String SpotifyClient::apiGet(const juce::String &path){
     if(accessToken.isEmpty())
         return {};
 
-    return httpGet(kApiBase + path, juce::StringArray("Authorization: Bearer " + accessToken));
+    return httpRequest(kApiBase + path, juce::StringArray("Authorization: Bearer " + accessToken));
 }
 
 juce::var SpotifyClient::apiPost(
@@ -120,6 +124,17 @@ juce::var SpotifyClient::apiPost(
         headers.add(header);
 
     return httpPostForm(kApiBase + path, body, headers);
+}
+
+juce::String SpotifyClient::apiPut(const juce::String &path){
+    if(accessToken.isEmpty())
+        return {};
+
+    return httpRequest(
+        juce::String(kApiBase) + path,
+        juce::StringArray("Authorization: Bearer " + accessToken),
+        "PUT"
+    );
 }
 
 
@@ -377,7 +392,14 @@ void SpotifyClient::startCallbackServer(){
 
     serverThread = std::thread([this] {
         WSADATA wsaData;
-        WSAStartup(MAKEWORD(2, 2), &wsaData);
+        if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0){
+            const juce::ScopedLock sl(lock);
+            status_ = SpotifyStatus::Error;
+            lastErrorMessage_ = "Failed to initialize network";
+            if(onStateChanged)
+                juce::MessageManager::callAsync(onStateChanged);
+            return;
+        }
 
         auto listenSocket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -397,7 +419,7 @@ void SpotifyClient::startCallbackServer(){
         addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = htons((u_short)CALLBACK_PORT);
 
-        if(bind(listenSocket, (struct sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR){
+        if(bind(listenSocket, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == SOCKET_ERROR){
             closesocket(listenSocket);
             const juce::ScopedLock sl(lock);
             status_ = SpotifyStatus::Error;
@@ -515,7 +537,7 @@ void SpotifyClient::poll(){
 
     bool networkOk = true;
 
-    const auto playbackJson = httpGet(
+    const auto playbackJson = httpRequest(
         juce::String(kApiBase) + "/me/player/currently-playing",
         juce::StringArray("Authorization: Bearer " + localToken)
     );
@@ -532,7 +554,7 @@ void SpotifyClient::poll(){
         networkOk = false;
     }
 
-    const auto devicesJson = httpGet(
+    const auto devicesJson = httpRequest(
         juce::String(kApiBase) + "/me/player/devices",
         juce::StringArray("Authorization: Bearer " + localToken)
     );
@@ -669,4 +691,38 @@ juce::String SpotifyClient::lastErrorMessage() const {
 bool SpotifyClient::hasActiveDevice() const {
     const juce::ScopedLock sl(lock);
     return deviceActive_;
+}
+
+void SpotifyClient::setVolume(int percent){
+    if(!authenticated)
+        return;
+
+    apiPut("/me/player/volume?volume_percent=" + juce::String(percent));
+
+    const juce::ScopedLock sl(lock);
+    currentVolume = percent;
+}
+
+void SpotifyClient::setPlaying(bool play){
+    if(!authenticated)
+        return;
+
+    if(play)
+        apiPut("/me/player/play");
+    else
+        apiPut("/me/player/pause");
+}
+
+void SpotifyClient::skipNext(){
+    if(!authenticated)
+        return;
+
+    apiPost("/me/player/next");
+}
+
+void SpotifyClient::skipPrevious(){
+    if(!authenticated) 
+        return;
+        
+    apiPost("/me/player/previous");
 }

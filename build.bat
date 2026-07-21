@@ -23,6 +23,7 @@ if /i "%1"=="help" (
     echo   .\build.bat run         launch the app
     echo   .\build.bat run Debug   launch Release config
     echo   .\build.bat test        build + run tests
+    echo   .\build.bat lint        run static code analysis
     echo   .\build.bat clean       delete build/ directory
     echo   .\build.bat help        show this message
     echo --------------------------------------------------
@@ -37,6 +38,11 @@ if /i "%1"=="clean" (
     if exist build\ rmdir /s /q build
     echo Done.
     exit /b 0
+)
+
+if /i "%1"=="lint" (
+    powershell -ExecutionPolicy Bypass -File lint.ps1
+    exit /b !ERRORLEVEL!
 )
 
 if /i "%1"=="run" (

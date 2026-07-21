@@ -56,10 +56,6 @@ bool SettingsStore::save (const AppSettings &settings, juce::String &errorMessag
     return true;
 }
 
-juce::File SettingsStore::getAppDataDirectory() const {
-    return appDataDirectory;
-}
-
 juce::File SettingsStore::getConfigFile() const {
     return appDataDirectory.getChildFile(configFileName);
 }

@@ -22,10 +22,11 @@ private:
     void exchangeCodeForTokens(const juce::String &);
     void refreshAccessToken();
 
-    juce::String httpGet(const juce::String &, const juce::StringArray & = {});
+    juce::String httpRequest(const juce::String &, const juce::StringArray & = {}, const juce::String &method = "GET");
     juce::var httpPostForm(const juce::String &, const juce::StringPairArray &, const juce::StringArray & = {});
     juce::String apiGet(const juce::String &);
     juce::var apiPost(const juce::String &, const juce::StringPairArray & = {}, const juce::StringArray & = {});
+    juce::String apiPut(const juce::String &);
 
     void parsePlaybackState(const juce::var &);
     void parseDevices(const juce::var &);
@@ -79,6 +80,11 @@ public:
     int  deviceVolume() const;
     void poll();
     bool hasActiveDevice() const;
+
+    void setVolume(int);
+    void setPlaying(bool);
+    void skipNext();
+    void skipPrevious();
 
     SpotifyStatus status() const;
 

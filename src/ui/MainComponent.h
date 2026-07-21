@@ -11,16 +11,6 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class MainComponent final : public juce::Component, private juce::Timer {
-public:
-    MainComponent (AppSettings &, const SettingsStore &, AppLogger &);
-    ~MainComponent() override;
-
-    void paint(juce::Graphics &) override;
-    void resized() override;
-    void appendDiagnosticsMessage(const juce::String &);
-
-    AudioCaptureEngine captureEngine;
-
 private:
     void saveSettingsFromUi();
     void reloadSettingsIntoUi();
@@ -58,10 +48,24 @@ private:
     juce::TextButton saveSettingsButton{"Save"};
     juce::TextButton reloadSettingsButton{"Reload"};
     juce::TextButton spotifyConnectButton{"Connect Spotify"};
+    juce::TextButton prevButton{"⏮"};
+    juce::TextButton playPauseButton{"▶"};
+    juce::TextButton nextButton{"⏭"};
     juce::Label spotifyStatusLabel;
-    int spotifyPollCounter = 0;
 
+    int spotifyPollCounter = 0;
     bool wasCapturing = false;
+    bool volumeChanging_ = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
+
+public:
+    MainComponent (AppSettings &, const SettingsStore &, AppLogger &);
+    ~MainComponent() override;
+
+    void paint(juce::Graphics &) override;
+    void resized() override;
+    void appendDiagnosticsMessage(const juce::String &);
+
+    AudioCaptureEngine captureEngine;
 };

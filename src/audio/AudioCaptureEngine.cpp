@@ -49,10 +49,6 @@ namespace {
         void **addr() { 
             return &p; 
         }
-
-        template <typename T> T *as() const { 
-            return reinterpret_cast<T *>(p); 
-        }
     };
 
     struct TaskMemPtr{
@@ -225,7 +221,7 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
     client.p  = nullptr;
 
     auto loop = [this] (IAudioCaptureClient *cap, IAudioClient *cli) {
-        CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+        static_cast<void>(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
         while(capturing.load(std::memory_order_relaxed)){
             Sleep(10); 

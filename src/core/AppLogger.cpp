@@ -15,7 +15,7 @@ void AppLogger::setDiagnosticsSink(DiagnosticsSink sink){
     const juce::ScopedLock sl(lock);
     diagnosticsSink = std::move(sink);
 
-    if (diagnosticsSink == nullptr)
+    if (!diagnosticsSink)
         return;
 
     for (const auto &message : bufferedMessages)
@@ -44,7 +44,7 @@ void AppLogger::write (const juce::String &level, const juce::String &message) {
         const auto sink = diagnosticsSink;
 
         juce::MessageManager::callAsync([sink, line] { 
-            sink (line); 
+            sink(line); 
         });
     }
 }

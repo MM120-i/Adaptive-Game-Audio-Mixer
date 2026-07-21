@@ -38,7 +38,7 @@ public:
 
         if (loadResult.createdDefaults)
             saveSettings("default settings creation");
-
+            
         lookAndFeel = std::make_unique<MixerLookAndFeel>();
         juce::LookAndFeel::setDefaultLookAndFeel(lookAndFeel.get());
         mainWindow = std::make_unique<MainWindow>(getApplicationName(), settings, settingsStore, *logger);
