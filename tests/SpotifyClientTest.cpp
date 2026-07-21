@@ -23,7 +23,7 @@ public:
             expect(!challenge.contains("="));
             expectEquals(challenge, juce::String("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"));
         }
-        beginTest("constructor — starts disconnected with no active device");
+        beginTest("constructor --- starts disconnected with no active device");
         {
             SpotifyClient client;
 
@@ -33,7 +33,7 @@ public:
             expect(client.isPlaying() == false);
         }
 
-        beginTest("disconnect — clears state and returns to Disconnected");
+        beginTest("disconnect --- clears state and returns to Disconnected");
         {
             SpotifyClient client;
 
@@ -54,7 +54,7 @@ public:
             expect(client.isPlaying() == false);
         }
 
-        beginTest("loadTokens — future expiry transitions to Connected");
+        beginTest("loadTokens --- future expiry transitions to Connected");
         {
             SpotifyClient client;
 
@@ -69,7 +69,7 @@ public:
             expect(client.status() == SpotifyStatus::Connected);
         }
 
-        beginTest("loadTokens — no saved tokens stays Disconnected");
+        beginTest("loadTokens --- no saved tokens stays Disconnected");
         {
             SpotifyClient client;
             AppSettings settings;
@@ -79,7 +79,7 @@ public:
             expect(client.status() == SpotifyStatus::Disconnected);
         }
 
-        beginTest("loadTokens — access token without refresh token stays Disconnected");
+        beginTest("loadTokens --- access token without refresh token stays Disconnected");
         {
             SpotifyClient client;
 
@@ -92,7 +92,7 @@ public:
             expect(client.status() == SpotifyStatus::Disconnected);
         }
 
-        beginTest("loadTokens — zero expiry with refresh token stays Disconnected");
+        beginTest("loadTokens --- zero expiry with refresh token stays Disconnected");
         {
             SpotifyClient client;
 
@@ -107,7 +107,7 @@ public:
             expect(client.status() == SpotifyStatus::Disconnected);
         }
 
-        beginTest("track and device accessors — return empty by default");
+        beginTest("track and device accessors --- return empty by default");
         {
             SpotifyClient client;
 
@@ -119,7 +119,7 @@ public:
             expectEquals(client.deviceVolume(), 0);
         }
 
-        beginTest("lastErrorMessage — empty after successful loadTokens");
+        beginTest("lastErrorMessage --- empty after successful loadTokens");
         {
             SpotifyClient client;
 
@@ -132,7 +132,7 @@ public:
             expect(client.lastErrorMessage().isEmpty());
         }
 
-        beginTest("lastErrorMessage — empty after disconnect");
+        beginTest("lastErrorMessage --- empty after disconnect");
         {
             SpotifyClient client;
 
@@ -147,7 +147,7 @@ public:
             expect(client.lastErrorMessage().isEmpty());
         }
 
-        beginTest("hasActiveDevice — stays false after loadTokens without polling");
+        beginTest("hasActiveDevice --- stays false after loadTokens without polling");
         {
             SpotifyClient client;
 
@@ -165,7 +165,7 @@ public:
             expect(client.hasActiveDevice() == false);
         }
 
-        beginTest("isPlaying — returns false by default and after disconnect");
+        beginTest("isPlaying --- returns false by default and after disconnect");
         {
             SpotifyClient client;
 
@@ -181,6 +181,52 @@ public:
 
             client.disconnect();
             expect(client.isPlaying() == false);
+        }
+
+        beginTest("setVolume --- updates currentVolume for authenticated client");
+        {
+            SpotifyClient client;
+
+            AppSettings settings;
+            settings.spotifyAccessToken = "test_access";
+            settings.spotifyRefreshToken = "test_refresh";
+            settings.spotifyTokenExpiry = juce::Time::currentTimeMillis() + 60000;
+            client.loadTokens(settings);
+
+            client.setVolume(42);
+            expectEquals(client.deviceVolume(), 42);
+
+            client.setVolume(100);
+            expectEquals(client.deviceVolume(), 100);
+
+            client.setVolume(0);
+            expectEquals(client.deviceVolume(), 0);
+        }
+
+        beginTest("setVolume --- no-op when not authenticated");
+        {
+            SpotifyClient client;
+
+            client.setVolume(75);
+            expectEquals(client.deviceVolume(), 0);
+        }
+
+        beginTest("setPlaying/skipNext/skipPrevious --- no crash when not authenticated");
+        {
+            SpotifyClient client;
+
+            client.setPlaying(true);
+            client.setPlaying(false);
+            client.skipNext();
+            client.skipPrevious();
+
+            expect(true);
+        }
+
+        beginTest("deviceVolume --- returns 0 by default");
+        {
+            SpotifyClient client;
+            expectEquals(client.deviceVolume(), 0);
         }
     }
 };

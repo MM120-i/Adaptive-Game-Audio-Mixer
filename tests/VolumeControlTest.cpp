@@ -15,14 +15,14 @@ public:
             expectEquals(vc.getVolume(), 42);
         }
 
-        beginTest("clamp — negative values clamped to 0");
+        beginTest("clamp --- negative values clamped to 0");
         {
             VolumeControl vc;
             vc.setVolume(-10);
             expectEquals(vc.getVolume(), 0);
         }
 
-        beginTest("clamp — values above 100 clamped to 100");
+        beginTest("clamp --- values above 100 clamped to 100");
         {
             VolumeControl vc;
             vc.setVolume(150);

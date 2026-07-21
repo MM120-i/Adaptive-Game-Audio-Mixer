@@ -7,7 +7,7 @@ public:
     AppSettingsTests() : juce::UnitTest("AppSettings", "Phase 1"){}
 
     void runTest() override{
-        beginTest("createDefaults — produces sensible default values");
+        beginTest("createDefaults --- produces sensible default values");
         {
             const auto defaults = AppSettings::createDefaults();
 
@@ -17,7 +17,7 @@ public:
             expect(defaults.lastLaunchTimestamp.isNotEmpty());
         }
 
-        beginTest("toJson → fromJson — round-trip preserves all values");
+        beginTest("toJson -> fromJson --- round-trip preserves all values");
         {
             AppSettings original;
             original.windowWidth = 1200;
@@ -33,7 +33,7 @@ public:
             expect(roundTripped.verboseDiagnostics == original.verboseDiagnostics);
         }
 
-        beginTest("fromJson — missing keys fall back to defaults");
+        beginTest("fromJson --- missing keys fall back to defaults");
         {
             auto *obj = new juce::DynamicObject();
             obj->setProperty ("windowWidth", 1280);  
@@ -46,7 +46,7 @@ public:
             expect(usedDefaults == true);              
         }
 
-        beginTest("fromJson — invalid json structure uses defaults");
+        beginTest("fromJson --- invalid json structure uses defaults");
         {
             juce::var json = juce::var("garbage");
 
@@ -56,7 +56,7 @@ public:
             expect(usedDefaults == true);  
         }
 
-        beginTest("fromJson — out-of-range values clamped to defaults");
+        beginTest("fromJson --- out-of-range values clamped to defaults");
         {
             auto *obj = new juce::DynamicObject();
             obj->setProperty("windowWidth", 100); 

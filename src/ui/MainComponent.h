@@ -48,9 +48,9 @@ private:
     juce::TextButton saveSettingsButton{"Save"};
     juce::TextButton reloadSettingsButton{"Reload"};
     juce::TextButton spotifyConnectButton{"Connect Spotify"};
-    juce::TextButton prevButton{"⏮"};
-    juce::TextButton playPauseButton{"▶"};
-    juce::TextButton nextButton{"⏭"};
+    juce::TextButton prevButton{juce::String::fromUTF8("\xe2\x8f\xae")};
+    juce::TextButton playPauseButton{juce::String::fromUTF8("\xe2\x96\xb6")};
+    juce::TextButton nextButton{juce::String::fromUTF8("\xe2\x8f\xad")};
     juce::Label spotifyStatusLabel;
 
     int spotifyPollCounter = 0;

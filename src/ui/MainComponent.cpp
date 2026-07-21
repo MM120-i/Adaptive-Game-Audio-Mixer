@@ -331,7 +331,9 @@ void MainComponent::updateSpotifyUi(){
             volumeControl.setVolume(spotVol);
     }
 
-    playPauseButton.setButtonText(spotifyClient.isPlaying() ? "⏸" : "▶");
+    playPauseButton.setButtonText(spotifyClient.isPlaying()
+        ? juce::String::fromUTF8("\xe2\x8f\xb8")
+        : juce::String::fromUTF8("\xe2\x96\xb6"));
 
     const auto currentStatus = spotifyClient.status();
 

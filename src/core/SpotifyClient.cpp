@@ -711,6 +711,9 @@ void SpotifyClient::setPlaying(bool play){
         apiPut("/me/player/play");
     else
         apiPut("/me/player/pause");
+
+    const juce::ScopedLock sl(lock);
+    playing = play;
 }
 
 void SpotifyClient::skipNext(){

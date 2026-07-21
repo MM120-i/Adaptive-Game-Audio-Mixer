@@ -6,7 +6,7 @@ public:
     LevelMeterTests() : juce::UnitTest("LevelMeter", "Phase 1"){}
 
     void runTest() override {
-        beginTest("clamp — values above 1.0 are clamped");
+        beginTest("clamp --- values above 1.0 are clamped");
         {
             LevelMeter meter;
             meter.setLevel(1.5f);
@@ -14,7 +14,7 @@ public:
             expect(meter.level <= 1.0f);
         }
 
-        beginTest("clamp — negative values are clamped to 0");
+        beginTest("clamp --- negative values are clamped to 0");
         {
             LevelMeter meter;
             meter.setLevel(-0.5f);
@@ -22,7 +22,7 @@ public:
             expect(meter.level >= 0.0f);
         }
 
-        beginTest("decay — multiple zero-level calls decrease the bar");
+        beginTest("decay --- multiple zero-level calls decrease the bar");
         {
             LevelMeter meter;
             meter.setLevel(1.0f);
@@ -34,7 +34,7 @@ public:
             expectLessThan(meter.decay, 1.0f);
         }
 
-        beginTest("decay — rate matches expected decayRate constant");
+        beginTest("decay --- rate matches expected decayRate constant");
         {
             LevelMeter meter;
             meter.setLevel(1.0f);          
@@ -42,14 +42,14 @@ public:
             expectWithinAbsoluteError(meter.decay, 0.92f, 0.001f);
         }
 
-        beginTest("peak hold — peak is stored when level spikes");
+        beginTest("peak hold --- peak is stored when level spikes");
         {
             LevelMeter meter;
             meter.setLevel(0.8f);
             expectGreaterOrEqual(meter.peakDb, -60.0f);
         }
 
-        beginTest("peak hold — very small signals produce -60 dB floor");
+        beginTest("peak hold --- very small signals produce -60 dB floor");
         {
             LevelMeter meter;
             meter.peakHoldStart = juce::Time::getMillisecondCounterHiRes() - 2000.0;
