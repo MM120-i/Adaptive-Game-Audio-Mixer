@@ -18,11 +18,12 @@ public:
 
 private:
     void mouseDown(const juce::MouseEvent &e) override {
-        if(e.mods.isRightButtonDown())
-            if(onRightClick)
-                onRightClick();
-        else
-            juce::TextButton::mouseDown(e);
+        if(e.mods.isRightButtonDown() && onRightClick){
+            onRightClick();
+            return;
+        }
+
+        juce::TextButton::mouseDown(e);
     }
 };
 

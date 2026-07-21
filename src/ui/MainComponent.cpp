@@ -195,7 +195,6 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
 
         btn->onClick = [this, vol = preset.volume] {
             volumeControl.animateToVolume(vol, 300);
-            spotifyClient.setVolume(vol);
         };
 
         addAndMakeVisible(btn);

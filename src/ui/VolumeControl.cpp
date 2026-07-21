@@ -153,9 +153,23 @@ void VolumeControl::paint(juce::Graphics &g){
 }
 
 void VolumeControl::animateToVolume(int target, int durationMs){
+    if(durationMs <= 0){
+        setVolume(target);
+        return;
+    }
+
     stopTimer();
+
+    const auto clampedTarget = std::clamp(target, 0, 100);
+
+    if(muted && clampedTarget > 0){
+        muted = false;
+        preMuteVolume = clampedTarget;
+        muteButton.setColour(juce::TextButton::buttonColourId, accentColour);
+    }
+
     animStart_ = static_cast<float>(currentVolume);
-    animTarget_ = static_cast<float>(std::clamp(target, 0, 100));
+    animTarget_ = static_cast<float>(clampedTarget);
     animProgress_ = 0.0f;
     animDuration_ = durationMs;
     animating_ = true;
