@@ -24,7 +24,9 @@ public:
     }
 
     void adjustVolume(int delta) {
-        if(!mainWindow) return;
+        if(!mainWindow) 
+            return;
+
         int vol = mainWindow->getMainComponent().volumeControl.getVolume();
         vol = std::clamp(vol + delta, 0, 100);
         mainWindow->getMainComponent().volumeControl.setVolume(vol);
@@ -32,39 +34,49 @@ public:
     }
 
     void toggleMute() {
-        if(!mainWindow) return;
+        if(!mainWindow) 
+            return;
+
         auto &vc = mainWindow->getMainComponent().volumeControl;
-        if(vc.isMuted())
-            vc.setVolume(vc.getVolume()); // unmute restores via internal state
-        else
-            vc.setVolume(0); // mute
+        vc.setMuted(!vc.isMuted());
     }
 
     void togglePlayPause() {
-        if(!mainWindow) return;
+        if(!mainWindow) 
+            return;
+
         auto &sc = mainWindow->getMainComponent().spotifyClient;
         sc.setPlaying(!sc.isPlaying());
     }
 
     void skipNext() {
-        if(!mainWindow) return;
+        if(!mainWindow) 
+            return;
+
         mainWindow->getMainComponent().spotifyClient.skipNext();
     }
 
     void applyPreset(int idx) {
-        if(!mainWindow) return;
-        if(idx < 0 || idx >= settings.volumePresets.size()) return;
+        if(!mainWindow) 
+            return;
+
+        if(idx < 0 || idx >= settings.volumePresets.size()) 
+            return;
+
         int vol = settings.volumePresets[idx].volume;
         mainWindow->getMainComponent().volumeControl.animateToVolume(vol, 300);
     }
 
     void toggleWindow() {
-        if(!mainWindow) return;
+        if(!mainWindow) 
+            return;
+
         mainWindow->setVisible(!mainWindow->isVisible());
     }
 
     void toggleHud() {
-        // Phase 8 — HUD overlay, no-op for now
+        // TODO: HUD overlay, no-op for now
+        return;
     }
 
     void initialise(const juce::String &) override {

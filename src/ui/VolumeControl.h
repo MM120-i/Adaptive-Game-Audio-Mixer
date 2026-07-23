@@ -23,6 +23,7 @@ public:
         return muted; 
     }
 
+    void setMuted(bool);
     void animateToVolume(int, int = 300);
     void resized() override;
     void paint(juce::Graphics &) override;
