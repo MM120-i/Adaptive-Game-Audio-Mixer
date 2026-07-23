@@ -140,6 +140,12 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
     if(object->hasProperty("defaultPresetIndex"))
         settings.defaultPresetIndex = static_cast<int>(object->getProperty("defaultPresetIndex"));
 
+    if(object->hasProperty("runAtStartup"))
+        settings.runAtStartup = static_cast<bool>(object->getProperty("runAtStartup"));
+
+    if(object->hasProperty("minimizeToTray"))
+        settings.minimizeToTray = static_cast<bool>(object->getProperty("minimizeToTray"));
+
     return settings;
 }
 
@@ -165,6 +171,8 @@ juce::var AppSettings::toJson() const {
 
     object->setProperty("volumePresets", presetVars);
     object->setProperty("defaultPresetIndex", defaultPresetIndex);
+    object->setProperty("runAtStartup", runAtStartup);
+    object->setProperty("minimizeToTray", minimizeToTray);
 
     return juce::var(object.release());
 }

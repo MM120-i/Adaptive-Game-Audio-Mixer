@@ -4,11 +4,15 @@
 #include "ui/MixerLookAndFeel.h"
 #include "core/SettingsStore.h"
 #include "core/GlobalHotkeys.h"
+#include "core/SystemTray.h"
+#include "ui/VolumeNotification.h"
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class AudioMixerApplication final : public juce::JUCEApplication {
 public:
+    std::unique_ptr<SystemTray> trayIcon;
+
     AudioMixerApplication() = default;
 
     const juce::String getApplicationName() override { 
@@ -27,10 +31,15 @@ public:
         if(!mainWindow) 
             return;
 
-        int vol = mainWindow->getMainComponent().volumeControl.getVolume();
+        auto &vc = mainWindow->getMainComponent().volumeControl;
+        auto &sc = mainWindow->getMainComponent().spotifyClient;
+        int vol = vc.getVolume();
+
         vol = std::clamp(vol + delta, 0, 100);
-        mainWindow->getMainComponent().volumeControl.setVolume(vol);
-        mainWindow->getMainComponent().spotifyClient.setVolume(vol);
+        vc.setVolume(vol);
+        vc.setVolume(vol);
+
+        VolumeNotification::show("Volume: " + juce::String(vol) + "%");
     }
 
     void toggleMute() {
@@ -39,6 +48,11 @@ public:
 
         auto &vc = mainWindow->getMainComponent().volumeControl;
         vc.setMuted(!vc.isMuted());
+
+        VolumeNotification::show(vc.isMuted() ? juce::String("Muted") : juce::String("Volume: ") + juce::String(vc.getVolume()) + "%");
+
+        if(trayIcon)
+            trayIcon->updateMenuText(vc.isMuted());
     }
 
     void togglePlayPause() {
@@ -47,6 +61,8 @@ public:
 
         auto &sc = mainWindow->getMainComponent().spotifyClient;
         sc.setPlaying(!sc.isPlaying());
+
+        VolumeNotification::show(sc.isPlaying() ? juce::String("Playing") : juce::String("Paused"));
     }
 
     void skipNext() {
@@ -63,8 +79,11 @@ public:
         if(idx < 0 || idx >= settings.volumePresets.size()) 
             return;
 
-        int vol = settings.volumePresets[idx].volume;
+        const auto &preset = settings.volumePresets[idx];
+        int vol = preset.volume;
         mainWindow->getMainComponent().volumeControl.animateToVolume(vol, 300);
+        
+        VolumeNotification::show(preset.name + " \xe2\x80\x94 " + juce::String(vol) + "%");
     }
 
     void toggleWindow() {
@@ -74,8 +93,8 @@ public:
         mainWindow->setVisible(!mainWindow->isVisible());
     }
 
+    // TODO: HUD overlay, no-op for now
     void toggleHud() {
-        // TODO: HUD overlay, no-op for now
         return;
     }
 
@@ -150,17 +169,52 @@ public:
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, 'H', [this]{ 
             toggleHud(); 
         });
+
+        trayIcon = std::make_unique<SystemTray>();
+
+        trayIcon->onShow = [this] {
+            mainWindow->setVisible(!mainWindow->isVisible());
+
+            if(mainWindow->isVisible())
+                mainWindow->toFront(true);
+        };
+
+        trayIcon->onQuit = [this] {
+            quit();
+        };
+
+        trayIcon->onMute = [this] {
+            toggleMute();
+        };
+
+        trayIcon->create();
+
+        if(settings.runAtStartup)
+            setRunStartup(true);
     }
 
-    void shutdown() override{
+    void shutdown() override {
+        if(trayIcon)
+            trayIcon->destroy();
+
         saveSettings("shutdown");
 
-        if (logger != nullptr)
+        if (logger)
             logger->info("Shutdown.");
 
         mainWindow = nullptr;
         lookAndFeel = nullptr;
         logger = nullptr;
+    }
+
+    void setRunStartup(bool enable){
+        juce::String exePath = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getFullPathName();
+        juce::String keyPath = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+
+        if(enable)
+            juce::WindowsRegistry::setValue(keyPath + "\\AudioMixer", exePath);
+        else
+            juce::WindowsRegistry::deleteValue(keyPath + "\\AudioMixer");
     }
 
     void systemRequestedQuit() override {
@@ -191,7 +245,7 @@ private:
         }
 
         void closeButtonPressed() override {
-            juce::JUCEApplication::getInstance()->systemRequestedQuit();
+            setVisible(false);
         }
 
         void moved() override {
@@ -242,4 +296,4 @@ private:
     std::unique_ptr<GlobalHotkeyManager> hotkeys;
 };
 
-START_JUCE_APPLICATION (AudioMixerApplication)
+START_JUCE_APPLICATION(AudioMixerApplication)
