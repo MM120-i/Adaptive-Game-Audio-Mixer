@@ -364,7 +364,7 @@ void MainComponent::updateCaptureStatus(){
 }
 
 void MainComponent::updateSpotifyUi(){
-    if(!volumeChanging_){
+    if(!volumeChanging_ && !volumeControl.isMuted()){
         const int spotVol = spotifyClient.deviceVolume();
 
         if(spotVol != volumeControl.getVolume())

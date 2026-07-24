@@ -35,9 +35,6 @@ private:
     void updateSpotifyUi();
     void timerCallback() override;
 
-    VolumeControl volumeControl;
-    SpotifyClient spotifyClient;
-
     AppSettings &settings;
     const SettingsStore &settingsStore;
     AppLogger &logger;
@@ -84,6 +81,9 @@ public:
     void paint(juce::Graphics &) override;
     void resized() override;
     void appendDiagnosticsMessage(const juce::String &);
+
+    VolumeControl volumeControl;
+    SpotifyClient spotifyClient;
 
     std::vector<std::unique_ptr<PresetButton>> presetButtons;
 

@@ -152,6 +152,30 @@ void VolumeControl::paint(juce::Graphics &g){
     g.fillAll(juce::Colour{0xff1a1d23});
 }
 
+void VolumeControl::setMuted(bool shouldMute){
+    if(shouldMute == muted)
+        return;
+
+    muted = shouldMute;
+
+    if(muted){
+        preMuteVolume = currentVolume;
+        volumeSlider.setValue(0.0, juce::dontSendNotification);
+        volumeLabel.setText("0%", juce::dontSendNotification);
+        currentVolume = 0;
+        muteButton.setColour(juce::TextButton::buttonColourId, mutedColour);
+    }
+    else{
+        currentVolume = preMuteVolume;
+        volumeSlider.setValue(static_cast<double>(currentVolume), juce::dontSendNotification);
+        volumeLabel.setText(juce::String(currentVolume) + "%", juce::dontSendNotification);
+        muteButton.setColour(juce::TextButton::buttonColourId, accentColour);
+    }
+
+    if(commitCallback)
+        commitCallback(currentVolume);
+}
+
 void VolumeControl::animateToVolume(int target, int durationMs){
     if(durationMs <= 0){
         setVolume(target);

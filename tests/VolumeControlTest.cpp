@@ -37,6 +37,33 @@ public:
             expect(vc.isMuted() == false);   
         }
 
+        beginTest("setMuted --- mutes to 0 and restores pre-mute volume");
+        {
+            VolumeControl vc;
+            vc.setVolume(75);
+            expectEquals(vc.getVolume(), 75);
+            expect(vc.isMuted() == false);
+
+            vc.setMuted(true);
+            expectEquals(vc.getVolume(), 0);
+            expect(vc.isMuted() == true);
+
+            vc.setMuted(false);
+            expectEquals(vc.getVolume(), 75);
+            expect(vc.isMuted() == false);
+        }
+
+        beginTest("setMuted --- double-mute is no-op");
+        {
+            VolumeControl vc;
+            vc.setVolume(50);
+            vc.setMuted(true);
+            vc.setMuted(true);  
+            expectEquals(vc.getVolume(), 0);
+            vc.setMuted(false);
+            expectEquals(vc.getVolume(), 50);
+        }
+
         beginTest("setVolume with dontSendNotification doesn't trigger commit");
         {
             int fired = 0;
