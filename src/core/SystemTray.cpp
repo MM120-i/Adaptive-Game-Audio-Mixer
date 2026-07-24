@@ -22,12 +22,14 @@ LRESULT CALLBACK SystemTray::wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
 
     switch (msg){
         case WM_TRAYICON:
-            if(lp == WM_LBUTTONDBLCLK)
+            if(lp == WM_LBUTTONDBLCLK){
                 if(self && self->onShow)
                     self->onShow();
-            else if(lp == WM_RBUTTONUP)
+            }
+            else if(lp == WM_RBUTTONUP){
                 if(self)
                     self->showContextMenu();
+            }
 
             return 0;
 

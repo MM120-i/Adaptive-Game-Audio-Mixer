@@ -12,7 +12,9 @@ VolumeNotification::VolumeNotification(const juce::String &message)
 
     if(disp){
         auto area = disp->userArea;
-        setBounds((area.getWidth() - width) / 2, area.getHeight() - height - 80, width, height);
+        setBounds(area.getX() + (area.getWidth() - width) / 2,
+                  area.getY() + area.getHeight() - height - 80,
+                  width, height);
     }
 
     setVisible(true);

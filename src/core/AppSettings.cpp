@@ -140,11 +140,8 @@ AppSettings AppSettings::fromJson(const juce::var &json, bool& usedDefaults) {
     if(object->hasProperty("defaultPresetIndex"))
         settings.defaultPresetIndex = static_cast<int>(object->getProperty("defaultPresetIndex"));
 
-    if(object->hasProperty("runAtStartup"))
-        settings.runAtStartup = static_cast<bool>(object->getProperty("runAtStartup"));
-
-    if(object->hasProperty("minimizeToTray"))
-        settings.minimizeToTray = static_cast<bool>(object->getProperty("minimizeToTray"));
+    settings.runAtStartup = readBool(*object, "runAtStartup", settings.runAtStartup, usedDefaults);
+    settings.minimizeToTray = readBool(*object, "minimizeToTray", settings.minimizeToTray, usedDefaults);
 
     return settings;
 }
