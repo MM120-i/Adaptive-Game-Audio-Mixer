@@ -4,16 +4,18 @@
 #include <windows.h>
 #include <juce_events/juce_events.h>
 
+#define NOMINMAX
+
 namespace {
     constexpr UINT WM_REGISTER_PENDING = WM_APP + 1;
 
     LRESULT CALLBACK hotkeyWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
-        auto *mgr = reinterpret_cast<GlobalHotkeyManager*>(
-            GetWindowLongPtr(hwnd, GWLP_USERDATA));
+        auto *mgr = reinterpret_cast<GlobalHotkeyManager*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
         if(msg == WM_HOTKEY){
             if(mgr)
                 mgr->handleHotkey(static_cast<int>(wp));
+
             return 0;
         }
 
@@ -46,6 +48,7 @@ GlobalHotkeyManager::GlobalHotkeyManager(){
         ready.set_value();
 
         MSG msg;
+
         while(GetMessage(&msg, nullptr, 0, 0) > 0)
             DispatchMessage(&msg);
     });
@@ -65,7 +68,7 @@ GlobalHotkeyManager::~GlobalHotkeyManager(){
         msgThread.join();
 }
 
-void GlobalHotkeyManager::add(int modifiers, int virtualKey, Callback callback){
+bool GlobalHotkeyManager::add(int modifiers, int virtualKey, Callback callback){
     const auto id = nextId++;
 
     {
@@ -79,6 +82,8 @@ void GlobalHotkeyManager::add(int modifiers, int virtualKey, Callback callback){
     }
 
     PostMessage(hwnd, WM_REGISTER_PENDING, 0, 0);
+    
+    return true; 
 }
 
 void GlobalHotkeyManager::processPending(){

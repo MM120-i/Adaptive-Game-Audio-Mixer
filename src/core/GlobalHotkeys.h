@@ -14,13 +14,12 @@ public:
     GlobalHotkeyManager();
     ~GlobalHotkeyManager();
 
-    void add(int, int, Callback);
+    bool add(int, int, Callback);
     void removeAll();
     void handleHotkey(int);
-
-private:
     void processPending();
 
+private:
     HWND hwnd = nullptr;
     std::thread msgThread;
     std::mutex callbackMutex;

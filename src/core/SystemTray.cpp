@@ -4,6 +4,8 @@
 
 #include "SystemTray.h"
 
+#define NOMINMAX
+
 namespace {
     constexpr auto className = "AudioMixerTrayWindow";
     constexpr UINT trayId = 1;
@@ -86,6 +88,11 @@ SystemTray::SystemTray(){
 
 SystemTray::~SystemTray(){
     destroy();
+
+    if(hwnd){
+        PostMessage(hwnd, WM_QUIT, 0, 0);
+        hwnd = nullptr;
+    }
 
     if(msgThread.joinable())
         msgThread.join();

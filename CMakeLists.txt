@@ -97,6 +97,7 @@ target_sources(AudioMixerTests
         tests/AppSettingsTest.cpp
         tests/VolumeControlTest.cpp
         tests/SpotifyClientTest.cpp
+        tests/Phase7Test.cpp
         src/ui/VolumeControl.cpp
         src/ui/VolumeControl.h
         src/ui/LevelMeter.cpp
@@ -109,6 +110,12 @@ target_sources(AudioMixerTests
         src/core/AppLogger.h
         src/core/SpotifyClient.cpp
         src/core/SpotifyClient.h
+        src/core/GlobalHotkeys.cpp
+        src/core/GlobalHotkeys.h
+        src/core/SystemTray.cpp
+        src/core/SystemTray.h
+        src/ui/VolumeNotification.cpp
+        src/ui/VolumeNotification.h
 )
 
 target_include_directories(AudioMixerTests

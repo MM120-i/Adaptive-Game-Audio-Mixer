@@ -26,6 +26,10 @@ public:
     void create();
     void destroy();
     void updateMenuText(bool);
+    
+    bool isCreated() const { 
+        return created; 
+    }
 
     Callback onShow;
     Callback onQuit;

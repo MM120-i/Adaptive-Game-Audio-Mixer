@@ -126,11 +126,11 @@ public:
 
         hotkeys = std::make_unique<GlobalHotkeyManager>();
 
-        hotkeys->add(MOD_CONTROL | MOD_SHIFT, VK_UP, [this] { 
+        hotkeys->add(MOD_CONTROL, VK_UP, [this]{ 
             adjustVolume(+5); 
         });
 
-        hotkeys->add(MOD_CONTROL | MOD_SHIFT, VK_DOWN, [this]{ 
+        hotkeys->add(MOD_CONTROL, VK_DOWN, [this]{ 
             adjustVolume(-5); 
         });
 
@@ -144,6 +144,10 @@ public:
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, VK_RIGHT, [this]{ 
             skipNext(); 
+        });
+
+        hotkeys->add(MOD_CONTROL | MOD_SHIFT, VK_LEFT, [this]{ 
+            mainWindow->getMainComponent().spotifyClient.skipPrevious(); 
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, '1', [this]{ 
