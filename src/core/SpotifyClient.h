@@ -42,6 +42,7 @@ private:
     juce::String currentDeviceName;
     bool playing = false;
     int currentVolume = 0;
+    juce::int64 lastLocalVolumeChange_ = 0;
 
     juce::CriticalSection lock;
     bool authenticated = false;

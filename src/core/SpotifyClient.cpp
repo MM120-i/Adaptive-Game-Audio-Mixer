@@ -631,7 +631,9 @@ void SpotifyClient::parseDevices(const juce::var &json){
 
         if(device.getProperty("is_active", juce::var())){
             currentDeviceName = device.getProperty("name", juce::var()).toString();
-            currentVolume = static_cast<int>(device.getProperty("volume_percent", juce::var()));
+
+            if(juce::Time::currentTimeMillis() - lastLocalVolumeChange_ >= 1000)
+                currentVolume = static_cast<int>(device.getProperty("volume_percent", juce::var()));
             deviceActive_ = true;
             break;
         }
@@ -704,6 +706,7 @@ void SpotifyClient::setVolume(int percent){
     {
         const juce::ScopedLock sl(lock);
         currentVolume = percent;
+        lastLocalVolumeChange_ = juce::Time::currentTimeMillis();
     }
 
     if(onStateChanged)
