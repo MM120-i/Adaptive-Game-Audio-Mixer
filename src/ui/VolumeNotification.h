@@ -16,7 +16,6 @@ private:
     void timerCallback() override;
     void paint(juce::Graphics &) override;
 
-    float opacity = 0.0f;
     Phase phase = Phase::FADE_IN;
     int phaseMs = 0;
     juce::String message_;
