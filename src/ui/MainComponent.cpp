@@ -61,6 +61,10 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     spotifyClient.startPolling();
     updateSpotifyUi();
     updateCaptureStatus();
+
+    // TODO Phase 3: move to mixer card layout
+    addAndMakeVisible(audioBalancer);
+
     startTimerHz(20);
     logger.info("UI created.");
 }
@@ -237,6 +241,7 @@ void MainComponent::initSpotifySection(){
 void MainComponent::initSessionMonitor(){
     sessionManager.onSessionChanged = [this]{
         juce::MessageManager::callAsync([this]{
+            logger.info("Session changed, count: " + juce::String(sessionManager.getActiveSessions().size()));
             audioBalancer.refreshSessions();
         });
     };
@@ -258,6 +263,11 @@ void MainComponent::resized(){
     auto area = bounds.toFloat();
 
     layoutHeader(area);
+    area.removeFromTop(static_cast<float>(gap));
+
+    // TODO Phase 3: move to mixer card
+    auto balancerRect = area.removeFromTop(180.0f);
+    audioBalancer.setBounds(balancerRect.reduced(innerPad).toNearestInt());
     area.removeFromTop(static_cast<float>(gap));
 
     const auto captureWidth = area.getWidth() * 0.56f;
@@ -348,15 +358,15 @@ void MainComponent::layoutNowPlayingCard(juce::Rectangle<float> &area){
     nextButton.setBounds(transportRow.removeFromLeft(60.0f).toNearestInt());
 }
 
-void MainComponent::layoutDiagnosticsCard(const juce::Rectangle<float> &area){
+void MainComponent::layoutDiagnosticsCard(juce::Rectangle<float> &area){
     diagCardRect = area;
-    auto inner = diagCardRect.reduced(innerPad);
+    juce::Rectangle<float> inner = diagCardRect.reduced(innerPad);
     
     diagnosticsSectionLabel.setText("Diagnostics", juce::dontSendNotification);
     diagnosticsSectionLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
     inner.removeFromTop(4.0f);
 
-    const auto editorHeight = inner.getHeight() - 32.0f;
+    float editorHeight = inner.getHeight() - 32.0f;
     diagnosticsEditor.setBounds(inner.removeFromTop(editorHeight).toNearestInt());
     inner.removeFromTop(6.0f);
 
@@ -370,9 +380,10 @@ void MainComponent::layoutDiagnosticsCard(const juce::Rectangle<float> &area){
 
 void MainComponent::timerCallback(){
     const auto capturing = captureEngine.isCapturing();
-    audioBalancer.setSystemLevel(
-        capturing ? captureEngine.getCurrentLevel() : 0.0f
-    );
+    const auto level = capturing ? captureEngine.getCurrentLevel() : 0.0f;
+
+    levelMeter.setLevel(level);
+    audioBalancer.setSystemLevel(level);
 
     if(wasCapturing && !capturing && captureEngine.getCaptureError().isNotEmpty()){
         logger.error("Capture stopped unexpectedly: " + captureEngine.getCaptureError());

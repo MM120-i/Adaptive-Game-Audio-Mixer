@@ -14,10 +14,7 @@ namespace {
         if(pid == 0)
             return true;
 
-        if(pid == GetCurrentProcessId()) 
-            return true;
-
-        if(name.isEmpty()) 
+        if(pid == GetCurrentProcessId())
             return true;
 
         return false;
@@ -33,7 +30,7 @@ namespace {
         if(displayNameWide) 
             CoTaskMemFree(displayNameWide);
 
-        info.processName = info.displayName.upToFirstOccurrenceOf(".exe", false, true);
+        info.processName = info.displayName;
 
         unsigned long pid = 0;
         IAudioSessionControl2 *sessionControl2 = nullptr;
@@ -43,7 +40,21 @@ namespace {
             sessionControl2->Release();
         }
 
-        info.pid = static_cast<int>(pid);
+            info.pid = static_cast<int>(pid);
+
+            if(info.displayName.isEmpty() && pid > 0){
+                HANDLE hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+                if(hProc){
+                    wchar_t exePath[MAX_PATH];
+                    DWORD len = MAX_PATH;
+                    if(QueryFullProcessImageNameW(hProc, 0, exePath, &len)){
+                        juce::String fullPath(exePath);
+                        info.processName = fullPath.fromLastOccurrenceOf("\\", false, true);
+                        info.displayName = info.processName;
+                    }
+                    CloseHandle(hProc);
+                }
+            }
         float volume = 1.0f;
         int muted = 0;
         ISimpleAudioVolume *simpleVolume = nullptr;
@@ -166,7 +177,7 @@ void AudioSessionManager::runMonitor(){
             }
         }
 
-        for(size_t tick = 0; tick < 40 && running; tick++)
+        for(size_t tick = 0; tick < 20 && running; tick++)
             Sleep(50);
     }
 

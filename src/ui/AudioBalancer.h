@@ -24,6 +24,7 @@ private:
 
     int spotifyPid = 0;
     int selectedGamePid = 0;
+    juce::String selectedGameName;
 
 public:
     explicit AudioBalancer(AudioSessionManager &);

@@ -48,7 +48,7 @@ private:
     void layoutCaptureCard(const juce::Rectangle<float> &card);
     void layoutVolumeCard(const juce::Rectangle<float> &card);
     void layoutNowPlayingCard(juce::Rectangle<float> &area);
-    void layoutDiagnosticsCard(const juce::Rectangle<float> &area);
+    void layoutDiagnosticsCard(juce::Rectangle<float> &area);
 
     AppSettings &settings;
     const SettingsStore &settingsStore;

@@ -16,13 +16,18 @@ AudioBalancer::AudioBalancer(AudioSessionManager &mgr): sessionManager(mgr){
     gameDropdown.setColour(juce::ComboBox::backgroundColourId, juce::Colour{0xff101418});
     gameDropdown.setColour(juce::ComboBox::textColourId, juce::Colour{0xffe4e4e7});
     gameDropdown.setColour(juce::ComboBox::outlineColourId, juce::Colour{0xff363840});
+    gameDropdown.setTextWhenNothingSelected("Select game...");
+    gameDropdown.setTextWhenNoChoicesAvailable("No games detected");
     
     gameDropdown.onChange = [this]{
         const auto id = gameDropdown.getSelectedId();
 
-        if(id > 0)
+        if(id > 0){
             selectedGamePid = id;
-
+            selectedGameName = gameDropdown.getText();
+            gameAppLabel.setText(selectedGameName, juce::dontSendNotification);
+        }
+            
         updateVolumes();
     };
 
@@ -79,15 +84,47 @@ void AudioBalancer::refreshSessions(){
     }
 
     gameDropdown.clear();
-    int itemId = 1;
 
-    for(const auto &session : sessions){
-        if(session.pid == newSpotifyPid)
-            continue;
+    if(selectedGamePid > 0){
+        bool stillExists = false;
 
-        gameDropdown.addItem(session.processName, session.pid);
-        itemId++;
+        for(const auto &s : sessions){
+            if(s.pid == selectedGamePid){
+                stillExists = true;
+                break;
+            }
+        }
+
+        if(stillExists){
+            gameDropdown.addItem(selectedGameName, selectedGamePid);
+            gameDropdown.setSelectedId(selectedGamePid);
+        }
+        else {
+            juce::Logger::writeToLog("Game closed: " + selectedGameName);
+            selectedGamePid = 0;
+            selectedGameName.clear();
+            gameAppLabel.setText("", juce::dontSendNotification);
+        }
     }
+
+    if(!selectedGamePid){
+        for(const auto &session : sessions){
+            if(session.processName.isEmpty())
+                continue;
+
+            if(session.processName.toLowerCase().contains("spotify"))
+                continue;
+
+            gameDropdown.addItem(session.processName, session.pid);
+        }
+    }
+
+    spotifyPid = newSpotifyPid;
+    const bool canBalance = (spotifyPid > 0 && selectedGamePid > 0);
+    crossFader.setEnabled(canBalance);
+
+    if(gameDropdown.getNumItems() > 0)
+        gameDropdown.setEnabled(true);
 
     if(selectedGamePid > 0){
         for(size_t i = 0; i < gameDropdown.getNumItems(); i++){
@@ -99,18 +136,17 @@ void AudioBalancer::refreshSessions(){
         }
     }
 
-    spotifyPid = newSpotifyPid;
-    const bool canBalance = (spotifyPid > 0 && selectedGamePid > 0);
-    crossFader.setEnabled(canBalance);
-    gameDropdown.setEnabled(gameDropdown.getNumItems() > 0);
-
     if(canBalance)
         updateVolumes();
 }
 
 void AudioBalancer::updateVolumes(){
-    if(spotifyPid <= 0 || selectedGamePid <= 0)
+    if(spotifyPid <= 0 || selectedGamePid <= 0){
+        crossFader.setEnabled(false);
         return;
+    }
+
+    crossFader.setEnabled(true);
 
     const float pos = static_cast<float>(crossFader.getValue());
     const float spotVol = 1.0f - pos;
