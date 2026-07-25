@@ -116,6 +116,8 @@ target_sources(AudioMixerTests
         src/core/SystemTray.h
         src/ui/VolumeNotification.cpp
         src/ui/VolumeNotification.h
+        src/audio/AudioSessionManager.cpp
+        src/audio/AudioSessionManager.h
 )
 
 target_include_directories(AudioMixerTests
@@ -127,6 +129,7 @@ target_link_libraries(AudioMixerTests
     PRIVATE
         juce::juce_gui_extra
         juce::juce_data_structures
-        juce::juce_cryptography)
+        juce::juce_cryptography
+        ole32)
 
 add_test(NAME AudioMixerTests COMMAND AudioMixerTests)

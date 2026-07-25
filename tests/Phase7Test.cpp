@@ -4,6 +4,7 @@
 #include "core/GlobalHotkeys.h"
 #include "core/SystemTray.h"
 #include "ui/VolumeNotification.h"
+#include "audio/AudioSessionManager.h"
 
 class Phase7Tests final : public juce::UnitTest {
 public:
@@ -76,6 +77,39 @@ public:
             mgr.handleHotkey(2);
             mgr.handleHotkey(99); 
             expect(true);
+        }
+
+        beginTest("AudioSessionManager --- constructor and destructor");
+        {
+            AudioSessionManager mgr;
+            expect(true);
+        }
+
+        beginTest("AudioSessionManager --- getActiveSessions returns empty initially");
+        {
+            AudioSessionManager mgr;
+            const auto sessions = mgr.getActiveSessions();
+            expect(sessions.empty());
+        }
+
+        beginTest("AudioSessionManager --- setSessionVolume does not crash");
+        {
+            AudioSessionManager mgr;
+            mgr.setSessionVolume(1234, 0.5f);
+            mgr.setSessionVolume(9999, 0.0f);
+            mgr.setSessionVolume(0, 1.0f);
+            expect(true);
+        }
+
+        beginTest("AudioSessionManager --- multiple instances are independent");
+        {
+            AudioSessionManager mgr1;
+            AudioSessionManager mgr2;
+
+            const auto s1 = mgr1.getActiveSessions();
+            const auto s2 = mgr2.getActiveSessions();
+
+            expect(s1.empty() == s2.empty());
         }
     }
 };

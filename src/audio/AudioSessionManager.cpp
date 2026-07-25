@@ -1,0 +1,218 @@
+#include <juce_events/juce_events.h>
+#include <mmdeviceapi.h>
+#include <audiopolicy.h>
+
+#include "AudioSessionManager.h"
+
+namespace {
+    const GUID kSessionManagerIID = {
+        0x77AA99A0, 0x1BD6, 0x484F,
+        {0x8B, 0xC7, 0x2C, 0x65, 0x4C, 0x9A, 0x9B, 0x6F}
+    };
+
+    bool shouldSkipSession(int pid, const juce::String &name){
+        if(pid == 0)
+            return true;
+
+        if(pid == GetCurrentProcessId()) 
+            return true;
+
+        if(name.isEmpty()) 
+            return true;
+
+        return false;
+    }
+
+    AudioSessionInfo readSessionInfo(IAudioSessionControl *sessionControl){
+        AudioSessionInfo info;
+
+        wchar_t *displayNameWide = nullptr;
+        sessionControl->GetDisplayName(&displayNameWide);
+        info.displayName = juce::String(displayNameWide);
+        
+        if(displayNameWide) 
+            CoTaskMemFree(displayNameWide);
+
+        info.processName = info.displayName.upToFirstOccurrenceOf(".exe", false, true);
+
+        unsigned long pid = 0;
+        IAudioSessionControl2 *sessionControl2 = nullptr;
+
+        if(SUCCEEDED(sessionControl->QueryInterface(__uuidof(IAudioSessionControl2), (void**)&sessionControl2))){
+            sessionControl2->GetProcessId(&pid);
+            sessionControl2->Release();
+        }
+
+        info.pid = static_cast<int>(pid);
+        float volume = 1.0f;
+        int muted = 0;
+        ISimpleAudioVolume *simpleVolume = nullptr;
+
+        if(SUCCEEDED(sessionControl->QueryInterface(__uuidof(ISimpleAudioVolume), (void**)&simpleVolume))){
+            simpleVolume->GetMasterVolume(&volume);
+            simpleVolume->GetMute(&muted);
+            simpleVolume->Release();
+        }
+
+        info.volume = volume;
+        info.muted = (muted != 0);
+
+        return info;
+    }
+
+    bool trySetSessionVolume(IAudioSessionControl *sessionControl, int targetPid, float volume){
+        unsigned long sessionPid = 0;
+        IAudioSessionControl2 *sc2 = nullptr;
+
+        if(SUCCEEDED(sessionControl->QueryInterface(__uuidof(IAudioSessionControl2), (void**)&sc2))){
+            sc2->GetProcessId(&sessionPid);
+            sc2->Release();
+        }
+
+        if(static_cast<int>(sessionPid) != targetPid)
+            return false;
+
+        ISimpleAudioVolume *simpleVol = nullptr;
+
+        if(SUCCEEDED(sessionControl->QueryInterface(__uuidof(ISimpleAudioVolume), (void**)&simpleVol))){
+            simpleVol->SetMasterVolume(volume, nullptr);
+            simpleVol->Release();
+
+            return true;
+        }
+
+        return false;
+    }
+}
+
+AudioSessionManager::AudioSessionManager()
+    : running(true)
+{
+    monitorThread = std::thread(&AudioSessionManager::runMonitor, this);
+}
+
+AudioSessionManager::~AudioSessionManager(){
+    running = false;
+
+    if(monitorThread.joinable())
+        monitorThread.join();
+}
+
+void AudioSessionManager::runMonitor(){
+    static_cast<void>(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+
+    while(running){
+        std::vector<AudioSessionInfo> currentSessions;
+        IMMDeviceEnumerator *deviceEnum = nullptr;
+        IMMDevice *defaultDevice = nullptr;
+        IAudioSessionManager2 *sessionMgr = nullptr;
+        IAudioSessionEnumerator *enumerator = nullptr;
+
+        bool setupOk =
+            SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr,
+            CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&deviceEnum))
+            && SUCCEEDED(deviceEnum->GetDefaultAudioEndpoint(eRender, eConsole, &defaultDevice))
+            && SUCCEEDED(defaultDevice->Activate(kSessionManagerIID, CLSCTX_ALL, nullptr, (void**)&sessionMgr))
+            && SUCCEEDED(sessionMgr->GetSessionEnumerator(&enumerator));
+
+        if(setupOk){
+            int sessionCount = 0;
+            enumerator->GetCount(&sessionCount);
+
+            for(size_t i = 0; i < sessionCount; i++){
+                IAudioSessionControl *sessionControl = nullptr;
+
+                if(SUCCEEDED(enumerator->GetSession(i, &sessionControl))){
+                    auto info = readSessionInfo(sessionControl);
+
+                    if(!shouldSkipSession(info.pid, info.displayName))
+                        currentSessions.push_back(info);
+
+                    sessionControl->Release();
+                }
+            }
+        }
+
+        if(enumerator)
+            enumerator->Release();
+
+        if(sessionMgr)
+            sessionMgr->Release();
+
+        if(defaultDevice)
+            defaultDevice->Release();
+
+        if(deviceEnum)
+            deviceEnum->Release();
+
+        {
+            const juce::ScopedLock sl(sessionLock);
+
+            if(currentSessions.size() != lastSessions.size() ||
+               !std::equal(currentSessions.begin(), currentSessions.end(), lastSessions.begin(),
+                    [](const auto &a, const auto &b){ 
+                        return a.pid == b.pid; 
+                    }
+                )
+            ){
+                lastSessions = currentSessions;
+
+                if(onSessionChanged)
+                    juce::MessageManager::callAsync(onSessionChanged);
+            }
+        }
+
+        for(size_t tick = 0; tick < 40 && running; tick++)
+            Sleep(50);
+    }
+
+    CoUninitialize();
+}
+
+std::vector<AudioSessionInfo> AudioSessionManager::getActiveSessions(){
+    const juce::ScopedLock sl(sessionLock);
+    return lastSessions;
+}
+
+void AudioSessionManager::setSessionVolume(int pid, float volume){
+    static_cast<void>(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+    IMMDeviceEnumerator *deviceEnum = nullptr;
+    IMMDevice *defaultDevice = nullptr;
+    IAudioSessionManager2 *sessionMgr = nullptr;
+    IAudioSessionEnumerator *enumerator = nullptr;
+
+    bool setupOk =
+        SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr,
+        CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&deviceEnum))
+        && SUCCEEDED(deviceEnum->GetDefaultAudioEndpoint(eRender, eConsole, &defaultDevice))
+        && SUCCEEDED(defaultDevice->Activate(kSessionManagerIID, CLSCTX_ALL, nullptr, (void**)&sessionMgr))
+        && SUCCEEDED(sessionMgr->GetSessionEnumerator(&enumerator));
+
+    if(setupOk){
+        int sessionCount = 0;
+        enumerator->GetCount(&sessionCount);
+
+        for(size_t i = 0; i < sessionCount; i++){
+            IAudioSessionControl *sessionControl = nullptr;
+
+            if(SUCCEEDED(enumerator->GetSession(i, &sessionControl))){
+                trySetSessionVolume(sessionControl, pid, volume);
+                sessionControl->Release();
+            }
+        }
+    }
+
+    if(enumerator)
+        enumerator->Release();
+
+    if(sessionMgr)
+        sessionMgr->Release();
+
+    if(defaultDevice)
+        defaultDevice->Release();
+
+    if(deviceEnum)
+        deviceEnum->Release();
+
+    CoUninitialize();
+}
