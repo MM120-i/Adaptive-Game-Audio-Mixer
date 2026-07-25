@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <juce_gui_extra/juce_gui_extra.h>
+
 #include "core/AppLogger.h"
 #include "core/AppSettings.h"
 #include "audio/AudioCaptureEngine.h"
@@ -8,8 +10,7 @@
 #include "core/SettingsStore.h"
 #include "core/SpotifyClient.h"
 #include "VolumeControl.h"
-
-#include <juce_gui_extra/juce_gui_extra.h>
+#include "audio/AudioSessionManager.h"
 
 class PresetButton : public juce::TextButton {
 public:
@@ -34,6 +35,19 @@ private:
     void updateCaptureStatus();
     void updateSpotifyUi();
     void timerCallback() override;
+
+    void initHeader();
+    void initCaptureSection();
+    void initVolumeSection();
+    void initDiagnosticsSection();
+    void initSpotifySection();
+    void initSessionMonitor();
+
+    void layoutHeader(juce::Rectangle<float> &area);
+    void layoutCaptureCard(const juce::Rectangle<float> &card);
+    void layoutVolumeCard(const juce::Rectangle<float> &card);
+    void layoutNowPlayingCard(juce::Rectangle<float> &area);
+    void layoutDiagnosticsCard(const juce::Rectangle<float> &area);
 
     AppSettings &settings;
     const SettingsStore &settingsStore;
@@ -88,4 +102,5 @@ public:
     std::vector<std::unique_ptr<PresetButton>> presetButtons;
 
     AudioCaptureEngine captureEngine;
+    AudioSessionManager sessionManager;
 };

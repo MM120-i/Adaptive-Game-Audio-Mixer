@@ -54,6 +54,8 @@ target_sources(AudioMixer
         src/ui/VolumeControl.h
         src/core/SpotifyClient.cpp
         src/core/SpotifyClient.h
+        src/audio/AudioSessionManager.cpp
+        src/audio/AudioSessionManager.h
         src/core/GlobalHotkeys.cpp
         src/core/GlobalHotkeys.h
         src/core/SystemTray.cpp
