@@ -85,10 +85,8 @@ namespace {
     }
 }
 
-AudioSessionManager::AudioSessionManager()
-    : running(true)
-{
-    monitorThread = std::thread(&AudioSessionManager::runMonitor, this);
+AudioSessionManager::AudioSessionManager(){
+
 }
 
 AudioSessionManager::~AudioSessionManager(){
@@ -98,8 +96,13 @@ AudioSessionManager::~AudioSessionManager(){
         monitorThread.join();
 }
 
+void AudioSessionManager::start(){
+    running = true;
+    monitorThread = std::thread(&AudioSessionManager::runMonitor, this);
+}
+
 void AudioSessionManager::runMonitor(){
-    static_cast<void>(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+    const bool comInitialized = SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
     while(running){
         std::vector<AudioSessionInfo> currentSessions;
@@ -116,8 +119,9 @@ void AudioSessionManager::runMonitor(){
             && SUCCEEDED(sessionMgr->GetSessionEnumerator(&enumerator));
 
         if(setupOk){
-            int sessionCount = 0;
-            enumerator->GetCount(&sessionCount);
+            int sessionCountSigned = 0;
+            enumerator->GetCount(&sessionCountSigned);
+            const size_t sessionCount = static_cast<size_t>(sessionCountSigned);
 
             for(size_t i = 0; i < sessionCount; i++){
                 IAudioSessionControl *sessionControl = nullptr;
@@ -166,7 +170,8 @@ void AudioSessionManager::runMonitor(){
             Sleep(50);
     }
 
-    CoUninitialize();
+    if(comInitialized)
+        CoUninitialize();
 }
 
 std::vector<AudioSessionInfo> AudioSessionManager::getActiveSessions(){
@@ -175,7 +180,7 @@ std::vector<AudioSessionInfo> AudioSessionManager::getActiveSessions(){
 }
 
 void AudioSessionManager::setSessionVolume(int pid, float volume){
-    static_cast<void>(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+    const bool comInitialized = SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
     IMMDeviceEnumerator *deviceEnum = nullptr;
     IMMDevice *defaultDevice = nullptr;
     IAudioSessionManager2 *sessionMgr = nullptr;
@@ -189,8 +194,9 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
         && SUCCEEDED(sessionMgr->GetSessionEnumerator(&enumerator));
 
     if(setupOk){
-        int sessionCount = 0;
-        enumerator->GetCount(&sessionCount);
+        int sessionCountSigned = 0;
+        enumerator->GetCount(&sessionCountSigned);
+        const size_t sessionCount = static_cast<size_t>(sessionCountSigned);
 
         for(size_t i = 0; i < sessionCount; i++){
             IAudioSessionControl *sessionControl = nullptr;
@@ -214,5 +220,6 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
     if(deviceEnum)
         deviceEnum->Release();
 
-    CoUninitialize();
+    if(comInitialized)
+        CoUninitialize();
 }

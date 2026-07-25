@@ -27,6 +27,7 @@ public:
     AudioSessionManager();
     ~AudioSessionManager();
 
+    void start();
     std::vector<AudioSessionInfo> getActiveSessions();
     void setSessionVolume(int, float);
 
