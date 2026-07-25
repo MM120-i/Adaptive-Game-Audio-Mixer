@@ -62,6 +62,8 @@ target_sources(AudioMixer
         src/core/SystemTray.h
         src/ui/VolumeNotification.cpp
         src/ui/VolumeNotification.h
+        src/ui/AudioBalancer.cpp
+        src/ui/AudioBalancer.h
 )
 
 target_include_directories(AudioMixer
@@ -120,6 +122,8 @@ target_sources(AudioMixerTests
         src/ui/VolumeNotification.h
         src/audio/AudioSessionManager.cpp
         src/audio/AudioSessionManager.h
+        src/ui/AudioBalancer.cpp
+        src/ui/AudioBalancer.h
 )
 
 target_include_directories(AudioMixerTests

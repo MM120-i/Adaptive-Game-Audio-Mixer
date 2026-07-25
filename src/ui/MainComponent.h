@@ -11,6 +11,7 @@
 #include "core/SpotifyClient.h"
 #include "VolumeControl.h"
 #include "audio/AudioSessionManager.h"
+#include "ui/AudioBalancer.h"
 
 class PresetButton : public juce::TextButton {
 public:
@@ -103,4 +104,5 @@ public:
 
     AudioCaptureEngine captureEngine;
     AudioSessionManager sessionManager;
+    AudioBalancer audioBalancer{sessionManager};
 };

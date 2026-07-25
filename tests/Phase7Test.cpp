@@ -5,6 +5,7 @@
 #include "core/SystemTray.h"
 #include "ui/VolumeNotification.h"
 #include "audio/AudioSessionManager.h"
+#include "ui/AudioBalancer.h"
 
 class Phase7Tests final : public juce::UnitTest {
 public:
@@ -110,6 +111,39 @@ public:
             const auto s2 = mgr2.getActiveSessions();
 
             expect(s1.empty() == s2.empty());
+        }
+
+        beginTest("AudioBalancer --- constructor does not crash");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            expect(true);
+        }
+
+        beginTest("AudioBalancer --- refreshSessions with empty sessions");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.refreshSessions();  // no sessions — should not crash
+            expect(true);
+        }
+
+        beginTest("AudioBalancer --- setSystemLevel does not crash");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.setSystemLevel(0.5f);
+            balancer.setSystemLevel(0.0f);
+            balancer.setSystemLevel(1.0f);
+            expect(true);
+        }
+
+        beginTest("AudioBalancer --- resized does not crash with no parent");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.resized();  // safe to call even without a parent
+            expect(true);
         }
     }
 };

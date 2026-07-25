@@ -236,11 +236,10 @@ void MainComponent::initSpotifySection(){
 
 void MainComponent::initSessionMonitor(){
     sessionManager.onSessionChanged = [this]{
-        juce::MessageManager::callAsync([this]{ 
-            logger.info("Audio sessions changed");
+        juce::MessageManager::callAsync([this]{
+            audioBalancer.refreshSessions();
         });
     };
-
     sessionManager.start();
 }
 
@@ -371,7 +370,9 @@ void MainComponent::layoutDiagnosticsCard(const juce::Rectangle<float> &area){
 
 void MainComponent::timerCallback(){
     const auto capturing = captureEngine.isCapturing();
-    levelMeter.setLevel(capturing ? captureEngine.getCurrentLevel() : 0.0f);
+    audioBalancer.setSystemLevel(
+        capturing ? captureEngine.getCurrentLevel() : 0.0f
+    );
 
     if(wasCapturing && !capturing && captureEngine.getCaptureError().isNotEmpty()){
         logger.error("Capture stopped unexpectedly: " + captureEngine.getCaptureError());
