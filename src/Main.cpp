@@ -27,19 +27,18 @@ public:
         return true; 
     }
 
-    void adjustVolume(int delta) {
+    void adjustVolume(float delta) {
         if(!mainWindow) 
             return;
 
-        auto &vc = mainWindow->getMainComponent().volumeControl;
-        auto &sc = mainWindow->getMainComponent().spotifyClient;
-        int vol = vc.getVolume();
+        auto &balancer = mainWindow->getMainComponent().audioBalancer;
+        float current = static_cast<float>(balancer.getCrossFaderValue());
+        float newVal = std::clamp(current + delta, 0.0f, 1.0f);
+        balancer.setCrossFaderValue(newVal);
 
-        vol = std::clamp(vol + delta, 0, 100);
-        vc.setVolume(vol);
-        vc.setVolume(vol);
-
-        VolumeNotification::show("Volume: " + juce::String(vol) + "%");
+        int spotPct = static_cast<int>((1.0f - newVal) * 100);
+        int gamePct = static_cast<int>(newVal * 100);
+        VolumeNotification::show("Spotify: " + juce::String(spotPct) + "%  Game: " + juce::String(gamePct) + "%");
     }
 
     void toggleMute() {
@@ -79,7 +78,7 @@ public:
         mainWindow->setVisible(!mainWindow->isVisible());
     }
 
-    // TODO: HUD overlay, no-op for now
+    // TODO
     void toggleHud() {
         return;
     }
@@ -108,11 +107,11 @@ public:
         hotkeys = std::make_unique<GlobalHotkeyManager>();
 
         hotkeys->add(MOD_CONTROL, VK_UP, [this]{ 
-            adjustVolume(+5); 
+            adjustVolume(-0.05f); 
         });
 
         hotkeys->add(MOD_CONTROL, VK_DOWN, [this]{ 
-            adjustVolume(-5); 
+            adjustVolume(+0.05f); 
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, 'M', [this]{ 

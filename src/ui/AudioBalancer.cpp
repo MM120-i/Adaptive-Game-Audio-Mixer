@@ -35,7 +35,8 @@ AudioBalancer::AudioBalancer(AudioSessionManager &mgr): sessionManager(mgr){
     addAndMakeVisible(gameDropdown);
 
     refreshButton.onClick = [this]{ 
-        sessionManager.refreshNow(); 
+        sessionManager.refreshNow();
+        startTimer(100);
     };
     
     addAndMakeVisible(refreshButton);
@@ -161,6 +162,20 @@ void AudioBalancer::updateVolumes(){
 
 void AudioBalancer::setSystemLevel(float level){
     levelMeter.setLevel(level);
+}
+
+void AudioBalancer::timerCallback(){
+    stopTimer();
+    refreshSessions();
+}
+
+double AudioBalancer::getCrossFaderValue() const {
+    return crossFader.getValue();
+}
+
+void AudioBalancer::setCrossFaderValue(double value){
+    crossFader.setValue(value, juce::dontSendNotification);
+    updateVolumes();
 }
 
 void AudioBalancer::resized(){

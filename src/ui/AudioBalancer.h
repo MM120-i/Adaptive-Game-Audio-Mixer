@@ -5,7 +5,7 @@
 #include "audio/AudioSessionManager.h"
 #include "LevelMeter.h"
 
-class AudioBalancer final : public juce::Component {
+class AudioBalancer final : public juce::Component, private juce::Timer {
 private:
     void updateVolumes();
 
@@ -33,4 +33,8 @@ public:
     void refreshSessions();
     void setSystemLevel(float);
     void resized() override;
+    void timerCallback() override;
+
+    double getCrossFaderValue() const;
+    void setCrossFaderValue(double);
 };
