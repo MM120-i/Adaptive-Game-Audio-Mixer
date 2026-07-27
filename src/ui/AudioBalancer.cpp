@@ -86,14 +86,8 @@ void AudioBalancer::refreshSessions(){
     gameDropdown.clear();
 
     if(selectedGamePid > 0){
-        bool stillExists = false;
-
-        for(const auto &s : sessions){
-            if(s.pid == selectedGamePid){
-                stillExists = true;
-                break;
-            }
-        }
+        const bool stillExists = std::any_of(sessions.begin(), sessions.end(),
+            [this](const auto &s){ return s.pid == selectedGamePid; });
 
         if(stillExists){
             gameDropdown.addItem(selectedGameName, selectedGamePid);

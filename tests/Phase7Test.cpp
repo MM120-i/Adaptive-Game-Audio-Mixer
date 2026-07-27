@@ -12,6 +12,7 @@ public:
     Phase7Tests(): juce::UnitTest("Phase7", "Phase 7"){}
 
     void runTest() override {
+#pragma warning(suppress: 6262)
         beginTest("VolumeNotification::show --- does not crash");
         {
             VolumeNotification::show("Test message");

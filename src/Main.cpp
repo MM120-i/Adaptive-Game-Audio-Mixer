@@ -72,20 +72,6 @@ public:
         mainWindow->getMainComponent().spotifyClient.skipNext();
     }
 
-    void applyPreset(int idx) {
-        if(!mainWindow) 
-            return;
-
-        if(idx < 0 || idx >= settings.volumePresets.size()) 
-            return;
-
-        const auto &preset = settings.volumePresets[idx];
-        int vol = preset.volume;
-        mainWindow->getMainComponent().volumeControl.animateToVolume(vol, 300);
-        
-        VolumeNotification::show(preset.name + " \xe2\x80\x94 " + juce::String(vol) + "%");
-    }
-
     void toggleWindow() {
         if(!mainWindow) 
             return;
@@ -119,11 +105,6 @@ public:
         juce::LookAndFeel::setDefaultLookAndFeel(lookAndFeel.get());
         mainWindow = std::make_unique<MainWindow>(getApplicationName(), settings, settingsStore, *logger);
 
-        logger->setDiagnosticsSink([this](const juce::String &message){
-            if (mainWindow != nullptr)
-                mainWindow->appendDiagnosticsMessage(message);
-        });
-
         hotkeys = std::make_unique<GlobalHotkeyManager>();
 
         hotkeys->add(MOD_CONTROL, VK_UP, [this]{ 
@@ -148,22 +129,6 @@ public:
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, VK_LEFT, [this]{ 
             mainWindow->getMainComponent().spotifyClient.skipPrevious(); 
-        });
-
-        hotkeys->add(MOD_CONTROL | MOD_SHIFT, '1', [this]{ 
-            applyPreset(0); 
-        });
-
-        hotkeys->add(MOD_CONTROL | MOD_SHIFT, '2', [this]{ 
-            applyPreset(1); 
-        });
-
-        hotkeys->add(MOD_CONTROL | MOD_SHIFT, '3', [this]{
-            applyPreset(2); 
-        });
-
-        hotkeys->add(MOD_CONTROL | MOD_SHIFT, '4', [this]{ 
-            applyPreset(3); 
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, 'O', [this]{
@@ -259,11 +224,6 @@ private:
         void resized() override {
             DocumentWindow::resized();
             updateStoredWindowSize();
-        }
-
-        void appendDiagnosticsMessage(const juce::String &message) {
-            if (mainComponent != nullptr)
-                mainComponent->appendDiagnosticsMessage(message);
         }
 
         MainComponent& getMainComponent() { return *mainComponent; }

@@ -3,6 +3,8 @@
 #include <functional>
 #include <juce_core/juce_core.h>
 
+// All logger functionality might need to be removed
+
 class AppLogger {
 public:
     using DiagnosticsSink = std::function<void(const juce::String &)>;
