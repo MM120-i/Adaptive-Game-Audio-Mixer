@@ -337,6 +337,9 @@ void MainComponent::updateSpotifyUi(){
             spotifyConnectButton.setButtonText("Connect Spotify");
             spotifyStatusLabel.setText("Connecting... check your browser", juce::dontSendNotification);
             return;
+
+        default:
+            break;
     }
 
     if(spotifyClient.isAuthenticated()){
