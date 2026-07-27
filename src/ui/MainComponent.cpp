@@ -27,10 +27,6 @@ namespace {
         return juce::FontOptions{13.0f};
     }
 
-    juce::Font monoFont(){
-        return juce::FontOptions{12.0f};
-    }
-
     void drawCard(juce::Graphics &g, juce::Rectangle<float> r){
         g.setColour(bgCard);
         g.fillRoundedRectangle(r, cornerRadius);
@@ -44,6 +40,22 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
       settingsStore(store),
       logger(appLogger)
 {
+    initHeader();
+    initCaptureSection();
+    initVolumeSection();
+    initSpotifySection();
+    initSessionMonitor();
+
+    spotifyClient.loadTokens(settings);
+    spotifyClient.startPolling();
+    updateSpotifyUi();
+    updateCaptureStatus();
+    addAndMakeVisible(audioBalancer);
+    startTimerHz(20);
+    logger.info("UI created.");
+}
+
+void MainComponent::initHeader(){
     headerLabel.setText("AudioMixer", juce::dontSendNotification);
     headerLabel.setFont(headerFont());
     headerLabel.setColour(juce::Label::textColourId, accent);
@@ -55,10 +67,12 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     versionLabel.setColour(juce::Label::textColourId, textSecondary);
     versionLabel.setJustificationType(juce::Justification::centredRight);
     addAndMakeVisible(versionLabel);
+}
 
-    captureSectionLabel.setFont(sectionFont());
-    captureSectionLabel.setColour(juce::Label::textColourId, textSecondary);
-    addAndMakeVisible(captureSectionLabel);
+void MainComponent::initCaptureSection(){
+    systemOutputSectionLabel.setFont(sectionFont());
+    systemOutputSectionLabel.setColour(juce::Label::textColourId, textSecondary);
+    addAndMakeVisible(systemOutputSectionLabel);
 
     startCaptureButton.onClick = [this]{
         if(captureEngine.isCapturing()){
@@ -77,10 +91,8 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
                 logger.error("Capture failed: " + errorMsg);
             }
         }
-
         updateCaptureStatus();
     };
-
     addAndMakeVisible(startCaptureButton);
 
     captureStatusLabel.setFont(bodyFont());
@@ -98,7 +110,9 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     addAndMakeVisible(captureDetailsLabel);
 
     addAndMakeVisible(levelMeter);
+}
 
+void MainComponent::initVolumeSection(){
     volumeSectionLabel.setFont(sectionFont());
     volumeSectionLabel.setColour(juce::Label::textColourId, textSecondary);
     addAndMakeVisible(volumeSectionLabel);
@@ -109,50 +123,16 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
         volumeChanging_ = false;
     });
     addAndMakeVisible(volumeControl);
+}
 
-    nowPlayingSectionLabel.setFont(sectionFont());
-    nowPlayingSectionLabel.setColour(juce::Label::textColourId, textSecondary);
-    addAndMakeVisible(nowPlayingSectionLabel);
-
-    diagnosticsSectionLabel.setFont(sectionFont());
-    diagnosticsSectionLabel.setColour(juce::Label::textColourId, textSecondary);
-    addAndMakeVisible(diagnosticsSectionLabel);
-
-    diagnosticsEditor.setMultiLine(true);
-    diagnosticsEditor.setReadOnly(true);
-    diagnosticsEditor.setScrollbarsShown(true);
-    diagnosticsEditor.setCaretVisible(false);
-    diagnosticsEditor.setPopupMenuEnabled(true);
-    diagnosticsEditor.setFont(monoFont());
-    diagnosticsEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colour{0xff101418});
-    diagnosticsEditor.setColour(juce::TextEditor::textColourId, juce::Colour{0xffd6e2ea});
-    diagnosticsEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour{0xff252830});
-    addAndMakeVisible(diagnosticsEditor);
-
-    verboseDiagnosticsToggle.setToggleState(settings.verboseDiagnostics, juce::dontSendNotification);
-    addAndMakeVisible(verboseDiagnosticsToggle);
-
-    saveSettingsButton.onClick = [this]{ 
-        saveSettingsFromUi(); 
-    };
-
-    addAndMakeVisible(saveSettingsButton);
-
-    reloadSettingsButton.onClick = [this]{ 
-        reloadSettingsIntoUi(); 
-    };
-
-    addAndMakeVisible(reloadSettingsButton);
-
+void MainComponent::initSpotifySection(){
     spotifyConnectButton.onClick = [this]{
         if(spotifyClient.isAuthenticated())
             spotifyClient.disconnect();
         else
             spotifyClient.startAuth();
-
         updateSpotifyUi();
     };
-
     addAndMakeVisible(spotifyConnectButton);
 
     spotifyStatusLabel.setFont(bodyFont());
@@ -162,170 +142,141 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
 
     spotifyClient.onStateChanged = [this]{
         const auto newStatus = spotifyClient.status();
-
         if(newStatus != lastSpotifyStatus){
             lastSpotifyStatus = newStatus;
             spotifyClient.saveTokens(settings);
-
             if(newStatus == SpotifyStatus::Connected)
                 spotifyClient.fetchDeviceVolume();
         }
-
         updateSpotifyUi();
     };
 
-    prevButton.onClick = [this]{
-        spotifyClient.skipPrevious();
-    };
+    prevButton.onClick = [this]{ spotifyClient.skipPrevious(); };
     addAndMakeVisible(prevButton);
 
-    playPauseButton.onClick = [this]{
-        spotifyClient.setPlaying(!spotifyClient.isPlaying());
-    };
+    playPauseButton.onClick = [this]{ spotifyClient.setPlaying(!spotifyClient.isPlaying()); };
     addAndMakeVisible(playPauseButton);
 
-    nextButton.onClick = [this]{
-        spotifyClient.skipNext();
-    };
+    nextButton.onClick = [this]{ spotifyClient.skipNext(); };
     addAndMakeVisible(nextButton);
 
-    for(size_t i = 0; i < settings.volumePresets.size(); i++){
-        const auto &preset = settings.volumePresets[i];
-        auto *btn = presetButtons.emplace_back(std::make_unique<PresetButton>(preset.name)).get();
+    nowPlayingSectionLabel.setFont(sectionFont());
+    nowPlayingSectionLabel.setColour(juce::Label::textColourId, textSecondary);
+    addAndMakeVisible(nowPlayingSectionLabel);
+}
 
-        btn->onClick = [this, vol = preset.volume] {
-            volumeControl.animateToVolume(vol, 300);
-        };
-
-        addAndMakeVisible(btn);
-    }
-
-    spotifyClient.loadTokens(settings);
-
-    if(settings.defaultPresetIndex >= 0 && settings.defaultPresetIndex < settings.volumePresets.size()){
-        const auto &dp = settings.volumePresets[settings.defaultPresetIndex];
-        volumeControl.setVolume(dp.volume);
-    }
-
-    spotifyClient.startPolling();
-
-    updateSpotifyUi();
-    updateCaptureStatus();
-    startTimerHz(20);
-    logger.info("UI created.");
+void MainComponent::initSessionMonitor(){
+    sessionManager.onSessionChanged = [this]{
+        juce::MessageManager::callAsync([this]{
+            audioBalancer.refreshSessions();
+        });
+    };
+    sessionManager.start();
 }
 
 MainComponent::~MainComponent() = default;
 
 void MainComponent::paint(juce::Graphics &g){
     g.fillAll(bgDark);
-    drawCard(g, captureCardRect);
+    drawCard(g, mixerCardRect);
     drawCard(g, volumeCardRect);
     drawCard(g, nowPlayingCardRect);
-    drawCard(g, diagCardRect);
+    drawCard(g, systemOutputCardRect);
 }
 
 void MainComponent::resized(){
     const auto bounds = getLocalBounds().reduced(sectionPad);
     auto area = bounds.toFloat();
-    auto headerRow = area.removeFromTop(38.0f);
 
-    headerLabel.setBounds(headerRow.removeFromLeft(250.0f).toNearestInt());
-    versionLabel.setBounds(headerRow.toNearestInt());
+    layoutHeader(area);
     area.removeFromTop(static_cast<float>(gap));
 
-    const auto captureWidth = area.getWidth() * 0.56f;
-    const auto volumeWidth  = area.getWidth() - captureWidth - static_cast<float>(gap);
-    auto row = area.removeFromTop(230.0f);
+    const auto mixerWidth = area.getWidth() * 0.60f;
+    const auto volumeWidth = area.getWidth() - mixerWidth - static_cast<float>(gap);
+    auto row = area.removeFromTop(280.0f);
 
-    captureCardRect = row.removeFromLeft(captureWidth);
-    auto capInner = captureCardRect.reduced(innerPad);
-
-    captureSectionLabel.setText("Capture", juce::dontSendNotification);
-    captureSectionLabel.setBounds(capInner.removeFromTop(18.0f).toNearestInt());
-    capInner.removeFromTop(4.0f);
-
-    auto buttonRow = capInner.removeFromTop(static_cast<float>(controlHeight));
-    startCaptureButton.setBounds(buttonRow.removeFromLeft(140.0f).toNearestInt());
-    buttonRow.removeFromLeft(10.0f);
-    captureStatusLabel.setBounds(buttonRow.toNearestInt());
-
-    capInner.removeFromTop(6.0f);
-    deviceInfoLabel.setBounds(capInner.removeFromTop(18.0f).toNearestInt());
-    captureDetailsLabel.setBounds(capInner.removeFromTop(16.0f).toNearestInt());
-    capInner.removeFromTop(6.0f);
-    levelMeter.setBounds(capInner.toNearestInt());
+    mixerCardRect = row.removeFromLeft(mixerWidth);
+    layoutMixerCard(mixerCardRect);
 
     row.removeFromLeft(static_cast<float>(gap));
     volumeCardRect = row;
-    auto volInner = volumeCardRect.reduced(innerPad);
-
-    volumeSectionLabel.setText("Volume", juce::dontSendNotification);
-    volumeSectionLabel.setBounds(volInner.removeFromTop(18.0f).toNearestInt());
-    volInner.removeFromTop(6.0f);
-
-    auto vcRect = volInner.removeFromTop(70.0f);
-    volumeControl.setBounds(vcRect.toNearestInt());
-
-    volInner.removeFromTop(6.0f);
-
-    if(!presetButtons.empty()){
-        auto presetRow = volInner.removeFromTop(static_cast<float>(controlHeight));
-        const auto btnCount = static_cast<int>(presetButtons.size());
-        const auto btnWidth = (presetRow.getWidth() - (btnCount - 1) * 6.0f) / static_cast<float>(btnCount);
-
-        for(auto &btn : presetButtons){
-            btn->setBounds(presetRow.removeFromLeft(btnWidth).toNearestInt());
-            presetRow.removeFromLeft(6.0f);
-        }
-    }
+    layoutVolumeCard(volumeCardRect);
 
     area.removeFromTop(static_cast<float>(gap));
-    nowPlayingCardRect = area.removeFromTop(140.0f);
+    layoutNowPlayingCard(area);
 
-    auto npInner = nowPlayingCardRect.reduced(innerPad);
+    area.removeFromTop(static_cast<float>(gap));
+    layoutSystemOutputCard(area);
+}
+
+void MainComponent::layoutHeader(juce::Rectangle<float> &area){
+    auto headerRow = area.removeFromTop(38.0f);
+    headerLabel.setBounds(headerRow.removeFromLeft(250.0f).toNearestInt());
+    versionLabel.setBounds(headerRow.toNearestInt());
+}
+
+void MainComponent::layoutMixerCard(const juce::Rectangle<float> &card){
+    audioBalancer.setBounds(card.reduced(innerPad).toNearestInt());
+}
+
+void MainComponent::layoutVolumeCard(const juce::Rectangle<float> &card){
+    auto inner = card.reduced(innerPad);
+
+    volumeSectionLabel.setText("Volume", juce::dontSendNotification);
+    volumeSectionLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
+    inner.removeFromTop(6.0f);
+
+    volumeControl.setBounds(inner.toNearestInt());
+}
+
+void MainComponent::layoutNowPlayingCard(juce::Rectangle<float> &area){
+    nowPlayingCardRect = area.removeFromTop(140.0f);
+    auto inner = nowPlayingCardRect.reduced(innerPad);
 
     nowPlayingSectionLabel.setText("Now Playing", juce::dontSendNotification);
-    nowPlayingSectionLabel.setBounds(npInner.removeFromTop(18.0f).toNearestInt());
-    npInner.removeFromTop(4.0f);
+    nowPlayingSectionLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
+    inner.removeFromTop(4.0f);
 
-    auto spotifyRow = npInner.removeFromTop(static_cast<float>(controlHeight));
+    auto spotifyRow = inner.removeFromTop(static_cast<float>(controlHeight));
     spotifyConnectButton.setBounds(spotifyRow.removeFromLeft(140.0f).toNearestInt());
     spotifyRow.removeFromLeft(10.0f);
     spotifyStatusLabel.setBounds(spotifyRow.toNearestInt());
+    inner.removeFromTop(6.0f);
 
-    npInner.removeFromTop(6.0f);
-    auto transportRow = npInner.removeFromTop(static_cast<float>(controlHeight));
+    auto transportRow = inner.removeFromTop(static_cast<float>(controlHeight));
     prevButton.setBounds(transportRow.removeFromLeft(60.0f).toNearestInt());
     transportRow.removeFromLeft(8.0f);
     playPauseButton.setBounds(transportRow.removeFromLeft(60.0f).toNearestInt());
     transportRow.removeFromLeft(8.0f);
     nextButton.setBounds(transportRow.removeFromLeft(60.0f).toNearestInt());
+}
 
-    area.removeFromTop(static_cast<float>(gap));
-    diagCardRect = area;
+void MainComponent::layoutSystemOutputCard(juce::Rectangle<float> &area){
+    systemOutputCardRect = area.removeFromTop(100.0f);
+    auto inner = systemOutputCardRect.reduced(innerPad);
 
-    auto diagInner = diagCardRect.reduced(innerPad);
+    systemOutputSectionLabel.setText("System Output", juce::dontSendNotification);
+    systemOutputSectionLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
+    inner.removeFromTop(4.0f);
 
-    diagnosticsSectionLabel.setText("Diagnostics", juce::dontSendNotification);
-    diagnosticsSectionLabel.setBounds(diagInner.removeFromTop(18.0f).toNearestInt());
-    diagInner.removeFromTop(4.0f);
+    auto buttonRow = inner.removeFromTop(static_cast<float>(controlHeight));
+    startCaptureButton.setBounds(buttonRow.removeFromLeft(140.0f).toNearestInt());
+    buttonRow.removeFromLeft(10.0f);
+    captureStatusLabel.setBounds(buttonRow.toNearestInt());
 
-    const auto editorHeight = diagInner.getHeight() - 32.0f;
-    diagnosticsEditor.setBounds(diagInner.removeFromTop(editorHeight).toNearestInt());
-    diagInner.removeFromTop(6.0f);
-
-    auto settingsRow = diagInner;
-    verboseDiagnosticsToggle.setBounds(settingsRow.removeFromLeft(140.0f).toNearestInt());
-    settingsRow.removeFromLeft(8.0f);
-    saveSettingsButton.setBounds(settingsRow.removeFromLeft(80.0f).toNearestInt());
-    settingsRow.removeFromLeft(8.0f);
-    reloadSettingsButton.setBounds(settingsRow.removeFromLeft(80.0f).toNearestInt());
+    inner.removeFromTop(6.0f);
+    deviceInfoLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
+    captureDetailsLabel.setBounds(inner.removeFromTop(16.0f).toNearestInt());
+    inner.removeFromTop(6.0f);
+    levelMeter.setBounds(inner.toNearestInt());
 }
 
 void MainComponent::timerCallback(){
     const auto capturing = captureEngine.isCapturing();
-    levelMeter.setLevel(capturing ? captureEngine.getCurrentLevel() : 0.0f);
+    const auto level = capturing ? captureEngine.getCurrentLevel() : 0.0f;
+
+    levelMeter.setLevel(level);
+    audioBalancer.setSystemLevel(level);
 
     if(wasCapturing && !capturing && captureEngine.getCaptureError().isNotEmpty()){
         logger.error("Capture stopped unexpectedly: " + captureEngine.getCaptureError());
@@ -345,7 +296,6 @@ void MainComponent::timerCallback(){
     }
 
     spotifyPollCounter++;
-    
     if(spotifyPollCounter >= 40){
         spotifyPollCounter = 0;
         updateSpotifyUi();
@@ -376,19 +326,20 @@ void MainComponent::updateSpotifyUi(){
     playPauseButton.setButtonText(spotifyClient.isPlaying()
         ? juce::String::fromUTF8("\xe2\x8f\xb8")
         : juce::String::fromUTF8("\xe2\x96\xb6"));
+ 
+    switch (spotifyClient.status()){
+        case SpotifyStatus::Error:
+            spotifyConnectButton.setButtonText("Connect Spotify");
+            spotifyStatusLabel.setText(spotifyClient.lastErrorMessage(), juce::dontSendNotification);
+            return;
 
-    const auto currentStatus = spotifyClient.status();
+        case SpotifyStatus::Connecting:
+            spotifyConnectButton.setButtonText("Connect Spotify");
+            spotifyStatusLabel.setText("Connecting... check your browser", juce::dontSendNotification);
+            return;
 
-    if(currentStatus == SpotifyStatus::Error){
-        spotifyConnectButton.setButtonText("Connect Spotify");
-        spotifyStatusLabel.setText(spotifyClient.lastErrorMessage(), juce::dontSendNotification);
-        return;
-    }
-
-    if(currentStatus == SpotifyStatus::Connecting){
-        spotifyConnectButton.setButtonText("Connect Spotify");
-        spotifyStatusLabel.setText("Connecting... check your browser", juce::dontSendNotification);
-        return;
+        default:
+            break;
     }
 
     if(spotifyClient.isAuthenticated()){
@@ -400,6 +351,7 @@ void MainComponent::updateSpotifyUi(){
                     spotifyStatusLabel.setText(spotifyClient.trackTitle() + " - " + spotifyClient.trackArtist(), juce::dontSendNotification);
                 else
                     spotifyStatusLabel.setText("Connected — waiting for track info", juce::dontSendNotification);
+                
                 break;
 
             case SpotifyStatus::NoActiveDevice:
@@ -410,38 +362,9 @@ void MainComponent::updateSpotifyUi(){
                 spotifyStatusLabel.setText("Connected", juce::dontSendNotification);
                 break;
         }
-    } 
+    }
     else {
         spotifyConnectButton.setButtonText("Connect Spotify");
         spotifyStatusLabel.setText("Not connected", juce::dontSendNotification);
     }
-}
-
-void MainComponent::appendDiagnosticsMessage(const juce::String &message){
-    diagnosticsEditor.moveCaretToEnd();
-    diagnosticsEditor.insertTextAtCaret(message + juce::newLine);
-}
-
-void MainComponent::saveSettingsFromUi(){
-    settings.verboseDiagnostics = verboseDiagnosticsToggle.getToggleState();
-    settings.lastLaunchTimestamp = juce::Time::getCurrentTime().toISO8601(true);
-    spotifyClient.saveTokens(settings);
-
-    auto errorMessage = juce::String();
-
-    if(settingsStore.save(settings, errorMessage))
-        logger.info("Settings saved.");
-    else
-        logger.error("Settings save failed: " + errorMessage);
-}
-
-void MainComponent::reloadSettingsIntoUi(){
-    const auto loadResult = settingsStore.load();
-    settings = loadResult.settings;
-    verboseDiagnosticsToggle.setToggleState(settings.verboseDiagnostics, juce::dontSendNotification);
-
-    if(loadResult.recoveredFromError)
-        logger.error(loadResult.message);
-    else
-        logger.info(loadResult.message);
 }

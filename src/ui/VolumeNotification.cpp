@@ -9,11 +9,15 @@ VolumeNotification::VolumeNotification(const juce::String &message)
     setAlpha(0.0f);
 
     auto disp = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay();
+
     if(disp){
         auto area = disp->userArea;
-        setBounds(area.getX() + (area.getWidth() - width) / 2,
-                  area.getY() + area.getHeight() - height - 80,
-                  width, height);
+        
+        setBounds(
+            area.getX() + (area.getWidth() - width) / 2,
+            area.getY() + area.getHeight() - height - 80,
+            width, height
+        );
     }
 
     setVisible(true);
@@ -33,6 +37,7 @@ void VolumeNotification::timerCallback(){
                 phase = Phase::HOLD;
                 phaseMs = 0;
             }
+
             break;
 
         case Phase::HOLD:
@@ -42,6 +47,7 @@ void VolumeNotification::timerCallback(){
                 phase = Phase::FADE_OUT;
                 phaseMs = 0;
             }
+
             break;
 
         case Phase::FADE_OUT:
@@ -53,6 +59,7 @@ void VolumeNotification::timerCallback(){
                 delete this;
                 return;
             }
+
             break;
     }
 }

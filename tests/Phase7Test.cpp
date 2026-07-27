@@ -4,12 +4,15 @@
 #include "core/GlobalHotkeys.h"
 #include "core/SystemTray.h"
 #include "ui/VolumeNotification.h"
+#include "audio/AudioSessionManager.h"
+#include "ui/AudioBalancer.h"
 
 class Phase7Tests final : public juce::UnitTest {
 public:
     Phase7Tests(): juce::UnitTest("Phase7", "Phase 7"){}
 
     void runTest() override {
+#pragma warning(suppress: 6262)
         beginTest("VolumeNotification::show --- does not crash");
         {
             VolumeNotification::show("Test message");
@@ -75,6 +78,72 @@ public:
             mgr.handleHotkey(1);
             mgr.handleHotkey(2);
             mgr.handleHotkey(99); 
+            expect(true);
+        }
+
+        beginTest("AudioSessionManager --- constructor and destructor");
+        {
+            AudioSessionManager mgr;
+            expect(true);
+        }
+
+        beginTest("AudioSessionManager --- getActiveSessions returns empty initially");
+        {
+            AudioSessionManager mgr;
+            const auto sessions = mgr.getActiveSessions();
+            expect(sessions.empty());
+        }
+
+        beginTest("AudioSessionManager --- setSessionVolume does not crash");
+        {
+            AudioSessionManager mgr;
+            mgr.setSessionVolume(1234, 0.5f);
+            mgr.setSessionVolume(9999, 0.0f);
+            mgr.setSessionVolume(0, 1.0f);
+            expect(true);
+        }
+
+        beginTest("AudioSessionManager --- multiple instances are independent");
+        {
+            AudioSessionManager mgr1;
+            AudioSessionManager mgr2;
+
+            const auto s1 = mgr1.getActiveSessions();
+            const auto s2 = mgr2.getActiveSessions();
+
+            expect(s1.empty() == s2.empty());
+        }
+
+        beginTest("AudioBalancer --- constructor does not crash");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            expect(true);
+        }
+
+        beginTest("AudioBalancer --- refreshSessions with empty sessions");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.refreshSessions();  // no sessions — should not crash
+            expect(true);
+        }
+
+        beginTest("AudioBalancer --- setSystemLevel does not crash");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.setSystemLevel(0.5f);
+            balancer.setSystemLevel(0.0f);
+            balancer.setSystemLevel(1.0f);
+            expect(true);
+        }
+
+        beginTest("AudioBalancer --- resized does not crash with no parent");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.resized();  // safe to call even without a parent
             expect(true);
         }
     }

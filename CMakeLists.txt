@@ -54,12 +54,16 @@ target_sources(AudioMixer
         src/ui/VolumeControl.h
         src/core/SpotifyClient.cpp
         src/core/SpotifyClient.h
+        src/audio/AudioSessionManager.cpp
+        src/audio/AudioSessionManager.h
         src/core/GlobalHotkeys.cpp
         src/core/GlobalHotkeys.h
         src/core/SystemTray.cpp
         src/core/SystemTray.h
         src/ui/VolumeNotification.cpp
         src/ui/VolumeNotification.h
+        src/ui/AudioBalancer.cpp
+        src/ui/AudioBalancer.h
 )
 
 target_include_directories(AudioMixer
@@ -116,6 +120,10 @@ target_sources(AudioMixerTests
         src/core/SystemTray.h
         src/ui/VolumeNotification.cpp
         src/ui/VolumeNotification.h
+        src/audio/AudioSessionManager.cpp
+        src/audio/AudioSessionManager.h
+        src/ui/AudioBalancer.cpp
+        src/ui/AudioBalancer.h
 )
 
 target_include_directories(AudioMixerTests
@@ -127,6 +135,7 @@ target_link_libraries(AudioMixerTests
     PRIVATE
         juce::juce_gui_extra
         juce::juce_data_structures
-        juce::juce_cryptography)
+        juce::juce_cryptography
+        ole32)
 
 add_test(NAME AudioMixerTests COMMAND AudioMixerTests)

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <vector>
+#include <juce_gui_extra/juce_gui_extra.h>
+
 #include "core/AppLogger.h"
 #include "core/AppSettings.h"
 #include "audio/AudioCaptureEngine.h"
@@ -8,45 +9,39 @@
 #include "core/SettingsStore.h"
 #include "core/SpotifyClient.h"
 #include "VolumeControl.h"
-
-#include <juce_gui_extra/juce_gui_extra.h>
-
-class PresetButton : public juce::TextButton {
-public:
-    using juce::TextButton::TextButton;
-    std::function<void()> onRightClick;
-
-private:
-    void mouseDown(const juce::MouseEvent &e) override {
-        if(e.mods.isRightButtonDown() && onRightClick){
-            onRightClick();
-            return;
-        }
-
-        juce::TextButton::mouseDown(e);
-    }
-};
+#include "audio/AudioSessionManager.h"
+#include "ui/AudioBalancer.h"
 
 class MainComponent final : public juce::Component, private juce::Timer {
 private:
-    void saveSettingsFromUi();
-    void reloadSettingsIntoUi();
     void updateCaptureStatus();
     void updateSpotifyUi();
     void timerCallback() override;
+
+    void initHeader();
+    void initCaptureSection();
+    void initVolumeSection();
+    void initSpotifySection();
+    void initSessionMonitor();
+
+    void layoutHeader(juce::Rectangle<float> &area);
+    void layoutMixerCard(const juce::Rectangle<float> &card);
+    void layoutVolumeCard(const juce::Rectangle<float> &card);
+    void layoutNowPlayingCard(juce::Rectangle<float> &area);
+    void layoutSystemOutputCard(juce::Rectangle<float> &area);
 
     AppSettings &settings;
     const SettingsStore &settingsStore;
     AppLogger &logger;
 
-    juce::Rectangle<float> captureCardRect;
+    juce::Rectangle<float> mixerCardRect;
     juce::Rectangle<float> volumeCardRect;
     juce::Rectangle<float> nowPlayingCardRect;
-    juce::Rectangle<float> diagCardRect;
+    juce::Rectangle<float> systemOutputCardRect;
 
     juce::Label headerLabel;
     juce::Label versionLabel;
-    juce::Label captureSectionLabel;
+    juce::Label systemOutputSectionLabel;
     juce::TextButton startCaptureButton{"Start Capture"};
     juce::Label captureStatusLabel;
     juce::Label deviceInfoLabel;
@@ -55,12 +50,7 @@ private:
     LevelMeter levelMeter;
     juce::Label volumeSectionLabel;
     juce::Label nowPlayingSectionLabel;
-    juce::Label diagnosticsSectionLabel;
-    
-    juce::TextEditor diagnosticsEditor;
-    juce::ToggleButton verboseDiagnosticsToggle{"Verbose logs"};
-    juce::TextButton saveSettingsButton{"Save"};
-    juce::TextButton reloadSettingsButton{"Reload"};
+
     juce::TextButton spotifyConnectButton{"Connect Spotify"};
     juce::TextButton prevButton{juce::String::fromUTF8("\xe2\x8f\xae")};
     juce::TextButton playPauseButton{juce::String::fromUTF8("\xe2\x96\xb6")};
@@ -80,12 +70,11 @@ public:
 
     void paint(juce::Graphics &) override;
     void resized() override;
-    void appendDiagnosticsMessage(const juce::String &);
 
     VolumeControl volumeControl;
     SpotifyClient spotifyClient;
 
-    std::vector<std::unique_ptr<PresetButton>> presetButtons;
-
     AudioCaptureEngine captureEngine;
+    AudioSessionManager sessionManager;
+    AudioBalancer audioBalancer{sessionManager};
 };
