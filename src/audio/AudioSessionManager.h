@@ -3,6 +3,7 @@
 #include <juce_core/juce_core.h>
 #include <atomic>
 #include <functional>
+#include <set>
 #include <thread>
 #include <vector>
 
@@ -21,6 +22,7 @@ private:
     std::thread monitorThread;
     std::atomic<bool> running{false};
     std::vector<AudioSessionInfo> lastSessions;
+    std::set<int> modifiedPids_;
     juce::CriticalSection sessionLock;
 
 public:
@@ -30,6 +32,7 @@ public:
     void start();
     std::vector<AudioSessionInfo> getActiveSessions();
     void setSessionVolume(int, float);
+    void resetAllVolumes();
 
     std::function<void()> onSessionChanged;
 };

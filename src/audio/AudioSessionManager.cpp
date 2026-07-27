@@ -101,6 +101,7 @@ AudioSessionManager::AudioSessionManager(){
 }
 
 AudioSessionManager::~AudioSessionManager(){
+    resetAllVolumes();
     running = false;
 
     if(monitorThread.joinable())
@@ -191,6 +192,8 @@ std::vector<AudioSessionInfo> AudioSessionManager::getActiveSessions(){
 }
 
 void AudioSessionManager::setSessionVolume(int pid, float volume){
+    modifiedPids_.insert(pid);
+
     const bool comInitialized = SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
     IMMDeviceEnumerator *deviceEnum = nullptr;
     IMMDevice *defaultDevice = nullptr;
@@ -233,4 +236,11 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
 
     if(comInitialized)
         CoUninitialize();
+}
+
+void AudioSessionManager::resetAllVolumes(){
+    for(int pid : modifiedPids_)
+        setSessionVolume(pid, 1.0f);
+
+    modifiedPids_.clear();
 }
