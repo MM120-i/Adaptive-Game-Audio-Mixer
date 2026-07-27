@@ -34,6 +34,12 @@ AudioBalancer::AudioBalancer(AudioSessionManager &mgr): sessionManager(mgr){
     gameDropdown.setEnabled(false);
     addAndMakeVisible(gameDropdown);
 
+    refreshButton.onClick = [this]{ 
+        sessionManager.refreshNow(); 
+    };
+    
+    addAndMakeVisible(refreshButton);
+
     crossFader.setSliderStyle(juce::Slider::LinearHorizontal);
     crossFader.setRange(0.0, 1.0, 0.01);
     crossFader.setValue(0.5, juce::dontSendNotification);
@@ -165,7 +171,10 @@ void AudioBalancer::resized(){
     auto y = sectionLabel.getBottom() + 4.0f;
 
     gameLabel.setBounds(bounds.getX(), y, 48.0f, 24.0f);
-    gameDropdown.setBounds(gameLabel.getRight() + 8.0f, y, bounds.getWidth() - 56.0f, 24.0f);
+    const auto refreshWidth = 60.0f;
+    const auto dropdownWidth = bounds.getWidth() - gameLabel.getWidth() - 8.0f - refreshWidth - 8.0f;
+    gameDropdown.setBounds(gameLabel.getRight() + 8.0f, y, dropdownWidth, 24.0f);
+    refreshButton.setBounds(gameDropdown.getRight() + 8.0f, y, refreshWidth, 24.0f);
     y = gameDropdown.getBottom() + 14.0f;
 
     const float sliderHeight = 24.0f;

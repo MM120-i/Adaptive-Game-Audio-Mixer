@@ -108,6 +108,10 @@ AudioSessionManager::~AudioSessionManager(){
         monitorThread.join();
 }
 
+void AudioSessionManager::refreshNow(){
+    forceRefresh = true;
+}
+
 void AudioSessionManager::start(){
     running = true;
     monitorThread = std::thread(&AudioSessionManager::runMonitor, this);
@@ -178,8 +182,10 @@ void AudioSessionManager::runMonitor(){
             }
         }
 
-        for(size_t tick = 0; tick < 20 && running; tick++)
+        for(size_t tick = 0; tick < 20 && running && !forceRefresh; tick++)
             Sleep(50);
+
+        forceRefresh = false;
     }
 
     if(comInitialized)
@@ -192,8 +198,10 @@ std::vector<AudioSessionInfo> AudioSessionManager::getActiveSessions(){
 }
 
 void AudioSessionManager::setSessionVolume(int pid, float volume){
-    modifiedPids_.insert(pid);
+    setSessionVolumeInternal(pid, volume, true);
+}
 
+void AudioSessionManager::setSessionVolumeInternal(int pid, float volume, bool track){
     const bool comInitialized = SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
     IMMDeviceEnumerator *deviceEnum = nullptr;
     IMMDevice *defaultDevice = nullptr;
@@ -207,6 +215,8 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
         && SUCCEEDED(defaultDevice->Activate(kSessionManagerIID, CLSCTX_ALL, nullptr, (void**)&sessionMgr))
         && SUCCEEDED(sessionMgr->GetSessionEnumerator(&enumerator));
 
+    bool changed = false;
+
     if(setupOk){
         int sessionCountSigned = 0;
         enumerator->GetCount(&sessionCountSigned);
@@ -216,11 +226,16 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
             IAudioSessionControl *sessionControl = nullptr;
 
             if(SUCCEEDED(enumerator->GetSession(i, &sessionControl))){
-                trySetSessionVolume(sessionControl, pid, volume);
+                if(trySetSessionVolume(sessionControl, pid, volume))
+                    changed = true;
+                    
                 sessionControl->Release();
             }
         }
     }
+
+    if(changed && track)
+        modifiedPids_.insert(pid);
 
     if(enumerator)
         enumerator->Release();
@@ -240,7 +255,7 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
 
 void AudioSessionManager::resetAllVolumes(){
     for(int pid : modifiedPids_)
-        setSessionVolume(pid, 1.0f);
+        setSessionVolumeInternal(pid, 1.0f, false);
 
     modifiedPids_.clear();
 }

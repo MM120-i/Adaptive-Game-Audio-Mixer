@@ -14,6 +14,7 @@ private:
     juce::Label sectionLabel;
     juce::Label gameLabel;
     juce::ComboBox gameDropdown;
+    juce::TextButton refreshButton{"Refresh"};
     juce::Slider crossFader;
     juce::Label musicAppLabel;
     juce::Label gameAppLabel;
