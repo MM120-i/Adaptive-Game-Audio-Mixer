@@ -18,7 +18,7 @@ struct AudioSessionInfo {
 class AudioSessionManager {
 private:
     void runMonitor();
-    void setSessionVolumeInternal(int, float, bool);
+    bool setSessionVolumeInternal(int, float, bool);
 
     std::thread monitorThread;
     std::atomic<bool> running{false};

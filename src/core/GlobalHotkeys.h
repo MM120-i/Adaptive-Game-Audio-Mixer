@@ -28,6 +28,8 @@ private:
         Callback callback;
     };
 
+    Callback findCallback(UINT, UINT) const;
+
     HHOOK keyboardHook_ = nullptr;
     HWND hwnd_ = nullptr;
     std::thread msgThread_;

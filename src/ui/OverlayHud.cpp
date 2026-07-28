@@ -125,15 +125,15 @@ void OverlayHud::paint(juce::Graphics &g){
     auto content = bounds.reduced(14.0f, 10.0f);
 
     g.setColour(juce::Colours::white);
-    g.setFont(juce::FontOptions{14.0f, juce::Font::bold});
-    g.drawText(trackName, content.removeFromTop(20.0f), juce::Justification::centredLeft);
+    g.setFont(juce::FontOptions{13.0f, juce::Font::bold});
+    g.drawText(trackName, content.removeFromTop(18.0f), juce::Justification::centredLeft);
     g.setColour(juce::Colours::white.withAlpha(0.65f));
-    g.setFont(juce::FontOptions{12.0f});
-    g.drawText(artistName, content.removeFromTop(18.0f), juce::Justification::centredLeft);
+    g.setFont(juce::FontOptions{11.0f});
+    g.drawText(artistName, content.removeFromTop(16.0f), juce::Justification::centredLeft);
 
-    content.removeFromTop(8.0f);
+    content.removeFromTop(4.0f);
 
-    auto barArea = content;
+    auto barArea = content.removeFromTop(20.0f);
     auto barY = barArea.getCentreY() - 3.0f;
 
     g.setColour(juce::Colour{0xffe07c24});
@@ -149,13 +149,13 @@ void OverlayHud::paint(juce::Graphics &g){
 
     auto pct = static_cast<int>((1.0 - balance) * 100);
     g.setColour(juce::Colours::white.withAlpha(0.8f));
-    g.setFont(juce::FontOptions{11.0f});
-    g.drawText(juce::String(pct) + "%", barArea.translated(0, 10.0f), juce::Justification::centred);
+    g.setFont(juce::FontOptions{10.0f});
+    g.drawText(juce::String(pct) + "%", content.removeFromTop(14.0f), juce::Justification::centred);
 
     auto stateText = isPlaying ? juce::String::fromUTF8("\xe2\x96\xb6  Playing")
                                : juce::String::fromUTF8("\xe2\x9d\x9a\xe2\x9d\x9a  Paused");
-                                
+
     g.setColour(juce::Colours::white.withAlpha(0.5f));
     g.setFont(juce::FontOptions{10.0f});
-    g.drawText(stateText, barArea.translated(0, 10.0f).withY(barArea.getBottom() + 4.0f), juce::Justification::centred);
+    g.drawText(stateText, content, juce::Justification::centred);
 }

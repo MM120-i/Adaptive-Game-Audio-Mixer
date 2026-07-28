@@ -86,10 +86,10 @@ namespace {
         ISimpleAudioVolume *simpleVol = nullptr;
 
         if(SUCCEEDED(sessionControl->QueryInterface(__uuidof(ISimpleAudioVolume), (void**)&simpleVol))){
-            simpleVol->SetMasterVolume(volume, nullptr);
+            const bool ok = SUCCEEDED(simpleVol->SetMasterVolume(volume, nullptr));
             simpleVol->Release();
 
-            return true;
+            return ok;
         }
 
         return false;
@@ -201,7 +201,7 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
     setSessionVolumeInternal(pid, volume, true);
 }
 
-void AudioSessionManager::setSessionVolumeInternal(int pid, float volume, bool track){
+bool AudioSessionManager::setSessionVolumeInternal(int pid, float volume, bool track){
     const bool comInitialized = SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
     IMMDeviceEnumerator *deviceEnum = nullptr;
     IMMDevice *defaultDevice = nullptr;
@@ -251,11 +251,15 @@ void AudioSessionManager::setSessionVolumeInternal(int pid, float volume, bool t
 
     if(comInitialized)
         CoUninitialize();
+
+    return changed;
 }
 
 void AudioSessionManager::resetAllVolumes(){
-    for(int pid : modifiedPids_)
-        setSessionVolumeInternal(pid, 1.0f, false);
-
-    modifiedPids_.clear();
+    for(auto it = modifiedPids_.begin(); it != modifiedPids_.end(); ){
+        if(setSessionVolumeInternal(*it, 1.0f, false))
+            it = modifiedPids_.erase(it);
+        else
+            ++it;
+    }
 }

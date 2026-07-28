@@ -1,5 +1,6 @@
 #include "GlobalHotkeys.h"
 
+#include <algorithm>
 #include <juce_events/juce_events.h>
 
 #define NOMINMAX
@@ -63,8 +64,24 @@ GlobalHotkeyManager::GlobalHotkeyManager(){
         );
 
         keyboardHook_ = SetWindowsHookEx(WH_KEYBOARD_LL, keyboardHookProc, nullptr, 0);
-        g_mgr = this;
 
+        if(!hwnd_ || !keyboardHook_){
+            if(keyboardHook_){
+                UnhookWindowsHookEx(keyboardHook_);
+                keyboardHook_ = nullptr;
+            }
+
+            if(hwnd_){
+                DestroyWindow(hwnd_);
+                hwnd_ = nullptr;
+            }
+
+            ready.set_value();
+
+            return;
+        }
+
+        g_mgr = this;
         ready.set_value();
 
         MSG msg;
@@ -73,17 +90,13 @@ GlobalHotkeyManager::GlobalHotkeyManager(){
             DispatchMessage(&msg);
         }
 
-        g_mgr = nullptr;
+        if(g_mgr == this)
+            g_mgr = nullptr;
 
-        if(keyboardHook_){
-            UnhookWindowsHookEx(keyboardHook_);
-            keyboardHook_ = nullptr;
-        }
-
-        if(hwnd_){
-            DestroyWindow(hwnd_);
-            hwnd_ = nullptr;
-        }
+        UnhookWindowsHookEx(keyboardHook_);
+        keyboardHook_ = nullptr;
+        DestroyWindow(hwnd_);
+        hwnd_ = nullptr;
     });
 
     readyFuture.wait();
@@ -113,23 +126,32 @@ void GlobalHotkeyManager::removeAll(){
 
 void GlobalHotkeyManager::checkHotkey(UINT vkCode){
     UINT mods = buildModifiers();
-    std::lock_guard<std::mutex> lock(callbackMutex_);
+    Callback cb;
 
-    for(const auto &combo : callbacks_){
-        if(combo.vk == vkCode && combo.mods == mods && combo.callback){
-            juce::MessageManager::callAsync(combo.callback);
-            return;
-        }
+    {
+        std::lock_guard<std::mutex> lock(callbackMutex_);
+        cb = findCallback(mods, vkCode);
     }
+
+    if(cb)
+        juce::MessageManager::callAsync(std::move(cb));
 }
 
 void GlobalHotkeyManager::fireCombo(UINT mods, UINT vk){
-    std::lock_guard<std::mutex> lock(callbackMutex_);
+    Callback cb;
 
-    for(const auto &combo : callbacks_){
-        if(combo.vk == vk && combo.mods == mods && combo.callback){
-            combo.callback();
-            return;
-        }
+    {
+        std::lock_guard<std::mutex> lock(callbackMutex_);
+        cb = findCallback(mods, vk);
     }
+
+    if(cb)
+        cb();
+}
+
+GlobalHotkeyManager::Callback GlobalHotkeyManager::findCallback(UINT mods, UINT vk) const {
+    auto it = std::find_if(callbacks_.begin(), callbacks_.end(),
+        [mods, vk](const Combo &c){ return c.mods == mods && c.vk == vk && c.callback; });
+
+    return it != callbacks_.end() ? it->callback : nullptr;
 }

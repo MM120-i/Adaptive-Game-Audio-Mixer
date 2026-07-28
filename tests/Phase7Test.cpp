@@ -79,7 +79,7 @@ public:
             mgr.fireCombo(0, VK_F16);
             mgr.fireCombo(0, VK_F17);
             mgr.fireCombo(0, VK_F18);
-            expect(true);
+            expectEquals(fired, 11);
         }
 
         beginTest("AudioSessionManager --- constructor and destructor");

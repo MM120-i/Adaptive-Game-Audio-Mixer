@@ -24,7 +24,7 @@ private:
     int hideCounter = -1;
 
     static constexpr int width = 300;
-    static constexpr int height = 94;
+    static constexpr int height = 112;
     static constexpr int refreshMs = 500;
     static constexpr int autoHideMs = 3000;
 
