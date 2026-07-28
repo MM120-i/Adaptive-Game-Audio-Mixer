@@ -11,8 +11,9 @@ class Phase7Tests final : public juce::UnitTest {
 public:
     Phase7Tests(): juce::UnitTest("Phase7", "Phase 7"){}
 
+#pragma warning(push)
+#pragma warning(disable: 6262)
     void runTest() override {
-#pragma warning(suppress: 6262)
         beginTest("VolumeNotification::show --- does not crash");
         {
             VolumeNotification::show("Test message");
@@ -189,6 +190,7 @@ public:
             expect(true);
         }
     }
+#pragma warning(pop)
 };
 
 static Phase7Tests phase7Tests;

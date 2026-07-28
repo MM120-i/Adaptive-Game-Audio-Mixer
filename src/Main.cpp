@@ -6,12 +6,14 @@
 #include "core/GlobalHotkeys.h"
 #include "core/SystemTray.h"
 #include "ui/VolumeNotification.h"
+#include "ui/OverlayHud.h"
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class AudioMixerApplication final : public juce::JUCEApplication {
 public:
     std::unique_ptr<SystemTray> trayIcon;
+    std::unique_ptr<OverlayHud> overlayHud;
 
     AudioMixerApplication() = default;
 
@@ -39,6 +41,8 @@ public:
         int spotPct = static_cast<int>((1.0f - newVal) * 100);
         int gamePct = static_cast<int>(newVal * 100);
         VolumeNotification::show("Spotify: " + juce::String(spotPct) + "%  Game: " + juce::String(gamePct) + "%");
+
+        flashHud();
     }
 
     void toggleMute() {
@@ -52,6 +56,8 @@ public:
 
         if(trayIcon)
             trayIcon->updateMenuText(vc.isMuted());
+
+        flashHud();
     }
 
     void togglePlayPause() {
@@ -60,8 +66,9 @@ public:
 
         auto &sc = mainWindow->getMainComponent().spotifyClient;
         sc.setPlaying(!sc.isPlaying());
-
         VolumeNotification::show(sc.isPlaying() ? juce::String("Playing") : juce::String("Paused"));
+        
+        flashHud();
     }
 
     void skipNext() {
@@ -69,6 +76,7 @@ public:
             return;
 
         mainWindow->getMainComponent().spotifyClient.skipNext();
+        flashHud();
     }
 
     void toggleWindow() {
@@ -78,9 +86,28 @@ public:
         mainWindow->setVisible(!mainWindow->isVisible());
     }
 
-    // TODO
     void toggleHud() {
-        return;
+        if(!mainWindow)
+            return;
+
+        if(!overlayHud){
+            auto &mc = mainWindow->getMainComponent();
+            overlayHud = std::make_unique<OverlayHud>(mc.spotifyClient, mc.audioBalancer);
+        }
+
+        overlayHud->toggle();
+    }
+
+    void flashHud() {
+        if(!mainWindow) 
+            return;
+
+        if(!overlayHud){
+            auto &mc = mainWindow->getMainComponent();
+            overlayHud = std::make_unique<OverlayHud>(mc.spotifyClient, mc.audioBalancer);
+        }
+
+        overlayHud->flash();
     }
 
     void initialise(const juce::String &) override {
@@ -127,7 +154,8 @@ public:
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, VK_LEFT, [this]{ 
-            mainWindow->getMainComponent().spotifyClient.skipPrevious(); 
+            mainWindow->getMainComponent().spotifyClient.skipPrevious();
+            flashHud(); 
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, 'O', [this]{
@@ -162,6 +190,8 @@ public:
     }
 
     void shutdown() override {
+        overlayHud.reset();
+        
         if(trayIcon)
             trayIcon->destroy();
 
