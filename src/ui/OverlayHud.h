@@ -10,6 +10,7 @@ private:
     void timerCallback() override;
     void paint(juce::Graphics &) override;
     void applyNativeTweaks();
+    void raiseToTop();
 
     SpotifyClient &spotifyClient;
     AudioBalancer &audioBalancer;

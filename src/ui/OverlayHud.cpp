@@ -11,7 +11,6 @@ OverlayHud::OverlayHud(SpotifyClient &sc, AudioBalancer &ab):
 {
     setAlwaysOnTop(true);
     setUsingNativeTitleBar(false);
-    setOpaque(false);
 
     auto disp = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay();
 
@@ -29,32 +28,54 @@ OverlayHud::~OverlayHud() = default;
 void OverlayHud::applyNativeTweaks(){
     auto *peer = getPeer();
 
-    if(!peer)
+    if(!peer) 
         return;
 
     auto hwnd = static_cast<HWND>(peer->getNativeHandle());
     auto exStyle = static_cast<LONG_PTR>(GetWindowLongPtr(hwnd, GWL_EXSTYLE));
 
-    exStyle |= WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
+    exStyle |= WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT | WS_EX_LAYERED;
     SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle);
-    
+    SetLayeredWindowAttributes(hwnd, 0, 204, LWA_ALPHA);
+
+    auto rgn = CreateRoundRectRgn(0, 0, width + 1, height + 1, 10, 10);
+    SetWindowRgn(hwnd, rgn, TRUE);
+
     SetWindowPos(
         hwnd, HWND_TOPMOST, 0, 0, 0, 0,
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED
     );
 }
 
+void OverlayHud::raiseToTop(){
+    auto *peer = getPeer();
+
+    if(peer){
+        auto hwnd = static_cast<HWND>(peer->getNativeHandle());
+        
+        SetWindowPos(
+            hwnd, HWND_TOPMOST, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+        );
+    }
+}
+
 void OverlayHud::toggle(){
     toggleOn = !toggleOn;
     hideCounter = -1;
     setVisible(toggleOn);
+
+    if(toggleOn)
+        raiseToTop();
 }
 
 void OverlayHud::flash(){   
     hideCounter = 0;
 
-    if(!isVisible())
+    if(!isVisible()){
         setVisible(true);
+        raiseToTop();
+    }
 }
 
 void OverlayHud::timerCallback(){
@@ -88,10 +109,10 @@ void OverlayHud::timerCallback(){
 void OverlayHud::paint(juce::Graphics &g){
     auto bounds = getLocalBounds().toFloat();
 
-    g.setColour(juce::Colour{0xcc13161a});
-    g.fillRoundedRectangle(bounds, 10.0f);
+    g.setColour(juce::Colour{0xff13161a});
+    g.fillAll();
     g.setColour(juce::Colours::white.withAlpha(0.12f));
-    g.drawRoundedRectangle(bounds, 10.0f, 1.0f);
+    g.drawRoundedRectangle(bounds.reduced(0.5f), 10.0f, 1.0f);
 
     if(!spotifyClient.isAuthenticated()){
         g.setColour(juce::Colours::white.withAlpha(0.5f));
@@ -133,7 +154,7 @@ void OverlayHud::paint(juce::Graphics &g){
 
     auto stateText = isPlaying ? juce::String::fromUTF8("\xe2\x96\xb6  Playing")
                                : juce::String::fromUTF8("\xe2\x9d\x9a\xe2\x9d\x9a  Paused");
-                               
+                                
     g.setColour(juce::Colours::white.withAlpha(0.5f));
     g.setFont(juce::FontOptions{10.0f});
     g.drawText(stateText, barArea.translated(0, 10.0f).withY(barArea.getBottom() + 4.0f), juce::Justification::centred);

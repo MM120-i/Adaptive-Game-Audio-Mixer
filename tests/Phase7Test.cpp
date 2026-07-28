@@ -69,16 +69,16 @@ public:
             expect(tray.isCreated() == false);
         }
 
-        beginTest("GlobalHotkeyManager --- callbacks fire when handleHotkey called directly");
+        beginTest("GlobalHotkeyManager --- callbacks fire when fireCombo called directly");
         {
             GlobalHotkeyManager mgr;
             int fired = 0;
 
             mgr.add(0, VK_F16, [&]{ fired++; });
             mgr.add(0, VK_F17, [&]{ fired += 10; });
-            mgr.handleHotkey(1);
-            mgr.handleHotkey(2);
-            mgr.handleHotkey(99); 
+            mgr.fireCombo(0, VK_F16);
+            mgr.fireCombo(0, VK_F17);
+            mgr.fireCombo(0, VK_F18);
             expect(true);
         }
 
