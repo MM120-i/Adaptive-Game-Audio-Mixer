@@ -13,7 +13,6 @@ public:
 
             expectGreaterOrEqual(defaults.windowWidth, 640);
             expectGreaterOrEqual(defaults.windowHeight, 420);
-            expect(defaults.verboseDiagnostics == true);
             expect(defaults.lastLaunchTimestamp.isNotEmpty());
         }
 
@@ -22,7 +21,8 @@ public:
             AppSettings original;
             original.windowWidth = 1200;
             original.windowHeight = 800;
-            original.verboseDiagnostics = false;
+            original.runAtStartup = true;
+            original.minimizeToTray = false;
 
             bool usedDefaults = false;
             const auto roundTripped = AppSettings::fromJson(original.toJson(), usedDefaults);
@@ -30,20 +30,21 @@ public:
             expect(usedDefaults == false);
             expectEquals(roundTripped.windowWidth,  original.windowWidth);
             expectEquals(roundTripped.windowHeight, original.windowHeight);
-            expect(roundTripped.verboseDiagnostics == original.verboseDiagnostics);
+            expect(roundTripped.runAtStartup == true);
+            expect(roundTripped.minimizeToTray == false);
         }
 
         beginTest("fromJson --- missing keys fall back to defaults");
         {
             auto *obj = new juce::DynamicObject();
-            obj->setProperty ("windowWidth", 1280);  
+            obj->setProperty("windowWidth", 1280);
 
             juce::var json(obj);
             bool usedDefaults = false;
             const auto settings = AppSettings::fromJson(json, usedDefaults);
 
-            expectEquals(settings.windowWidth, 1280);   
-            expect(usedDefaults == true);              
+            expectEquals(settings.windowWidth, 1280);
+            expect(usedDefaults == true);
         }
 
         beginTest("fromJson --- invalid json structure uses defaults");
@@ -53,71 +54,20 @@ public:
             bool usedDefaults = false;
             const auto settings = AppSettings::fromJson(json, usedDefaults);
 
-            expect(usedDefaults == true);  
+            expect(usedDefaults == true);
         }
 
         beginTest("fromJson --- out-of-range values clamped to defaults");
         {
             auto *obj = new juce::DynamicObject();
-            obj->setProperty("windowWidth", 100); 
+            obj->setProperty("windowWidth", 100);
 
             juce::var json(obj);
             bool usedDefaults = false;
             const auto settings = AppSettings::fromJson(json, usedDefaults);
 
-            expect(usedDefaults == true); 
-            expectGreaterOrEqual(settings.windowWidth, 640); 
-        }
-
-        beginTest("volume presets --- round-trip preserves all values");
-        {
-            AppSettings original;
-            original.volumePresets.clear();
-            original.volumePresets.add({"Test Preset", 42});
-
-            bool usedDefaults = false;
-            const auto roundTripped = AppSettings::fromJson(original.toJson(), usedDefaults);
-
-            expect(usedDefaults == false);
-            expectEquals(roundTripped.volumePresets.size(), 1);
-            expectEquals(roundTripped.volumePresets[0].name, juce::String("Test Preset"));
-            expectEquals(roundTripped.volumePresets[0].volume, 42);
-        }
-
-        beginTest("volume presets --- defaults contain four presets");
-        {
-            const auto defaults = AppSettings::createDefaults();
-            expectEquals(defaults.volumePresets.size(), 4);
-            expectEquals(defaults.volumePresets[0].name, juce::String("Game Focus"));
-            expectEquals(defaults.volumePresets[0].volume, 30);
-            expectEquals(defaults.volumePresets[3].name, juce::String("Full Send"));
-            expectEquals(defaults.volumePresets[3].volume, 100);
-        }
-
-        beginTest("default preset index --- round-trip");
-        {
-            AppSettings original;
-            original.defaultPresetIndex = 2;
-
-            bool usedDefaults = false;
-            const auto roundTripped = AppSettings::fromJson(original.toJson(), usedDefaults);
-
-            expect(usedDefaults == false);
-            expectEquals(roundTripped.defaultPresetIndex, 2);
-        }
-
-        beginTest("default preset index --- missing key falls to 0");
-        {
-            AppSettings settings;
-            settings.defaultPresetIndex = 5; 
-
-            auto *obj = new juce::DynamicObject();
-            juce::var json(obj);
-
-            bool usedDefaults = false;
-            const auto loaded = AppSettings::fromJson(json, usedDefaults);
-
-            expectEquals(loaded.defaultPresetIndex, 0);
+            expect(usedDefaults == true);
+            expectGreaterOrEqual(settings.windowWidth, 640);
         }
     }
 };

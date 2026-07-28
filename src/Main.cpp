@@ -233,6 +233,7 @@ private:
 
             setUsingNativeTitleBar(true);
             setResizable(true, true);
+            setResizeLimits(700, 700, 4000, 5000);
 
             auto component = std::make_unique<MainComponent>(settings, store, appLogger);
             mainComponent = component.get();
