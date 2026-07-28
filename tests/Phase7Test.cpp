@@ -11,8 +11,9 @@ class Phase7Tests final : public juce::UnitTest {
 public:
     Phase7Tests(): juce::UnitTest("Phase7", "Phase 7"){}
 
+#pragma warning(push)
+#pragma warning(disable: 6262)
     void runTest() override {
-#pragma warning(suppress: 6262)
         beginTest("VolumeNotification::show --- does not crash");
         {
             VolumeNotification::show("Test message");
@@ -68,17 +69,17 @@ public:
             expect(tray.isCreated() == false);
         }
 
-        beginTest("GlobalHotkeyManager --- callbacks fire when handleHotkey called directly");
+        beginTest("GlobalHotkeyManager --- callbacks fire when fireCombo called directly");
         {
             GlobalHotkeyManager mgr;
             int fired = 0;
 
             mgr.add(0, VK_F16, [&]{ fired++; });
             mgr.add(0, VK_F17, [&]{ fired += 10; });
-            mgr.handleHotkey(1);
-            mgr.handleHotkey(2);
-            mgr.handleHotkey(99); 
-            expect(true);
+            mgr.fireCombo(0, VK_F16);
+            mgr.fireCombo(0, VK_F17);
+            mgr.fireCombo(0, VK_F18);
+            expectEquals(fired, 11);
         }
 
         beginTest("AudioSessionManager --- constructor and destructor");
@@ -143,10 +144,53 @@ public:
         {
             AudioSessionManager mgr;
             AudioBalancer balancer(mgr);
-            balancer.resized();  // safe to call even without a parent
+            balancer.resized();  
+            expect(true);
+        }
+
+        beginTest("AudioBalancer --- getCrossFaderValue returns default 0.5");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            expectEquals(balancer.getCrossFaderValue(), 0.5);
+        }
+
+        beginTest("AudioBalancer --- setCrossFaderValue round-trip");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.setCrossFaderValue(0.75);
+            expectEquals(balancer.getCrossFaderValue(), 0.75);
+            balancer.setCrossFaderValue(0.25);
+            expectEquals(balancer.getCrossFaderValue(), 0.25);
+        }
+
+        beginTest("AudioBalancer --- setCrossFaderValue clamps to range");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.setCrossFaderValue(2.0);
+            expectEquals(balancer.getCrossFaderValue(), 1.0);
+            balancer.setCrossFaderValue(-0.5);
+            expectEquals(balancer.getCrossFaderValue(), 0.0);
+        }
+
+        beginTest("AudioSessionManager --- refreshNow does not crash");
+        {
+            AudioSessionManager mgr;
+            mgr.refreshNow();
+            expect(true);
+        }
+
+        beginTest("AudioBalancer --- timer callback does not crash");
+        {
+            AudioSessionManager mgr;
+            AudioBalancer balancer(mgr);
+            balancer.timerCallback();
             expect(true);
         }
     }
+#pragma warning(pop)
 };
 
 static Phase7Tests phase7Tests;

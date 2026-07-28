@@ -11,21 +11,28 @@ class GlobalHotkeyManager {
 public:
     using Callback = std::function<void()>;
 
+    static constexpr UINT WM_QUIT_THREAD = WM_APP + 2;
+
     GlobalHotkeyManager();
     ~GlobalHotkeyManager();
 
-    bool add(int, int, Callback);
+    bool add(UINT, UINT, Callback);
     void removeAll();
-    void handleHotkey(int);
-    void processPending();
+    void fireCombo(UINT mods, UINT vk);
+    void checkHotkey(UINT vkCode);
 
 private:
-    HWND hwnd = nullptr;
-    std::thread msgThread;
-    std::mutex callbackMutex;
-    std::vector<std::pair<int, Callback>> callbacks;
-    std::mutex pendingMutex;
-    struct Pending { int id; int mods; int vk; };
-    std::vector<Pending> pending;
-    int nextId = 1;
+    struct Combo {
+        UINT mods;
+        UINT vk;
+        Callback callback;
+    };
+
+    Callback findCallback(UINT, UINT) const;
+
+    HHOOK keyboardHook_ = nullptr;
+    HWND hwnd_ = nullptr;
+    std::thread msgThread_;
+    std::mutex callbackMutex_;
+    std::vector<Combo> callbacks_;
 };

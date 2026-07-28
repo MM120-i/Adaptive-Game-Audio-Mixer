@@ -86,10 +86,10 @@ namespace {
         ISimpleAudioVolume *simpleVol = nullptr;
 
         if(SUCCEEDED(sessionControl->QueryInterface(__uuidof(ISimpleAudioVolume), (void**)&simpleVol))){
-            simpleVol->SetMasterVolume(volume, nullptr);
+            const bool ok = SUCCEEDED(simpleVol->SetMasterVolume(volume, nullptr));
             simpleVol->Release();
 
-            return true;
+            return ok;
         }
 
         return false;
@@ -101,10 +101,15 @@ AudioSessionManager::AudioSessionManager(){
 }
 
 AudioSessionManager::~AudioSessionManager(){
+    resetAllVolumes();
     running = false;
 
     if(monitorThread.joinable())
         monitorThread.join();
+}
+
+void AudioSessionManager::refreshNow(){
+    forceRefresh = true;
 }
 
 void AudioSessionManager::start(){
@@ -177,8 +182,10 @@ void AudioSessionManager::runMonitor(){
             }
         }
 
-        for(size_t tick = 0; tick < 20 && running; tick++)
+        for(size_t tick = 0; tick < 20 && running && !forceRefresh; tick++)
             Sleep(50);
+
+        forceRefresh = false;
     }
 
     if(comInitialized)
@@ -191,6 +198,10 @@ std::vector<AudioSessionInfo> AudioSessionManager::getActiveSessions(){
 }
 
 void AudioSessionManager::setSessionVolume(int pid, float volume){
+    setSessionVolumeInternal(pid, volume, true);
+}
+
+bool AudioSessionManager::setSessionVolumeInternal(int pid, float volume, bool track){
     const bool comInitialized = SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
     IMMDeviceEnumerator *deviceEnum = nullptr;
     IMMDevice *defaultDevice = nullptr;
@@ -204,6 +215,8 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
         && SUCCEEDED(defaultDevice->Activate(kSessionManagerIID, CLSCTX_ALL, nullptr, (void**)&sessionMgr))
         && SUCCEEDED(sessionMgr->GetSessionEnumerator(&enumerator));
 
+    bool changed = false;
+
     if(setupOk){
         int sessionCountSigned = 0;
         enumerator->GetCount(&sessionCountSigned);
@@ -213,11 +226,16 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
             IAudioSessionControl *sessionControl = nullptr;
 
             if(SUCCEEDED(enumerator->GetSession(i, &sessionControl))){
-                trySetSessionVolume(sessionControl, pid, volume);
+                if(trySetSessionVolume(sessionControl, pid, volume))
+                    changed = true;
+                    
                 sessionControl->Release();
             }
         }
     }
+
+    if(changed && track)
+        modifiedPids_.insert(pid);
 
     if(enumerator)
         enumerator->Release();
@@ -233,4 +251,15 @@ void AudioSessionManager::setSessionVolume(int pid, float volume){
 
     if(comInitialized)
         CoUninitialize();
+
+    return changed;
+}
+
+void AudioSessionManager::resetAllVolumes(){
+    for(auto it = modifiedPids_.begin(); it != modifiedPids_.end(); ){
+        if(setSessionVolumeInternal(*it, 1.0f, false))
+            it = modifiedPids_.erase(it);
+        else
+            ++it;
+    }
 }

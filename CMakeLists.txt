@@ -64,6 +64,8 @@ target_sources(AudioMixer
         src/ui/VolumeNotification.h
         src/ui/AudioBalancer.cpp
         src/ui/AudioBalancer.h
+        src/ui/OverlayHud.cpp
+        src/ui/OverlayHud.h
 )
 
 target_include_directories(AudioMixer
@@ -102,6 +104,7 @@ target_sources(AudioMixerTests
         tests/VolumeControlTest.cpp
         tests/SpotifyClientTest.cpp
         tests/Phase7Test.cpp
+        tests/OverlayHudTest.cpp
         src/ui/VolumeControl.cpp
         src/ui/VolumeControl.h
         src/ui/LevelMeter.cpp
@@ -124,6 +127,8 @@ target_sources(AudioMixerTests
         src/audio/AudioSessionManager.h
         src/ui/AudioBalancer.cpp
         src/ui/AudioBalancer.h
+        src/ui/OverlayHud.cpp
+        src/ui/OverlayHud.h
 )
 
 target_include_directories(AudioMixerTests

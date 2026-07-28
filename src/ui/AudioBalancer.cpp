@@ -34,6 +34,13 @@ AudioBalancer::AudioBalancer(AudioSessionManager &mgr): sessionManager(mgr){
     gameDropdown.setEnabled(false);
     addAndMakeVisible(gameDropdown);
 
+    refreshButton.onClick = [this]{ 
+        sessionManager.refreshNow();
+        startTimer(100);
+    };
+    
+    addAndMakeVisible(refreshButton);
+
     crossFader.setSliderStyle(juce::Slider::LinearHorizontal);
     crossFader.setRange(0.0, 1.0, 0.01);
     crossFader.setValue(0.5, juce::dontSendNotification);
@@ -117,8 +124,7 @@ void AudioBalancer::refreshSessions(){
     const bool canBalance = (spotifyPid > 0 && selectedGamePid > 0);
     crossFader.setEnabled(canBalance);
 
-    if(gameDropdown.getNumItems() > 0)
-        gameDropdown.setEnabled(true);
+    gameDropdown.setEnabled(gameDropdown.getNumItems() > 0);
 
     if(selectedGamePid > 0){
         for(size_t i = 0; i < gameDropdown.getNumItems(); i++){
@@ -157,6 +163,20 @@ void AudioBalancer::setSystemLevel(float level){
     levelMeter.setLevel(level);
 }
 
+void AudioBalancer::timerCallback(){
+    stopTimer();
+    refreshSessions();
+}
+
+double AudioBalancer::getCrossFaderValue() const {
+    return crossFader.getValue();
+}
+
+void AudioBalancer::setCrossFaderValue(double value){
+    crossFader.setValue(value, juce::dontSendNotification);
+    updateVolumes();
+}
+
 void AudioBalancer::resized(){
     const auto bounds = getLocalBounds().toFloat();
 
@@ -165,7 +185,10 @@ void AudioBalancer::resized(){
     auto y = sectionLabel.getBottom() + 4.0f;
 
     gameLabel.setBounds(bounds.getX(), y, 48.0f, 24.0f);
-    gameDropdown.setBounds(gameLabel.getRight() + 8.0f, y, bounds.getWidth() - 56.0f, 24.0f);
+    const auto refreshWidth = 60.0f;
+    const auto dropdownWidth = bounds.getWidth() - gameLabel.getWidth() - 8.0f - refreshWidth - 8.0f;
+    gameDropdown.setBounds(gameLabel.getRight() + 8.0f, y, dropdownWidth, 24.0f);
+    refreshButton.setBounds(gameDropdown.getRight() + 8.0f, y, refreshWidth, 24.0f);
     y = gameDropdown.getBottom() + 14.0f;
 
     const float sliderHeight = 24.0f;
