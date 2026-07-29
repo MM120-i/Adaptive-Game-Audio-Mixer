@@ -197,8 +197,8 @@ std::vector<AudioSessionInfo> AudioSessionManager::getActiveSessions(){
     return lastSessions;
 }
 
-void AudioSessionManager::setSessionVolume(int pid, float volume){
-    setSessionVolumeInternal(pid, volume, true);
+bool AudioSessionManager::setSessionVolume(int pid, float volume){
+    return setSessionVolumeInternal(pid, volume, true);
 }
 
 bool AudioSessionManager::setSessionVolumeInternal(int pid, float volume, bool track){

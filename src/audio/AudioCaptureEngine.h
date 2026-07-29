@@ -62,4 +62,6 @@ public:
     float getCurrentLevel() const { 
         return currentLevel.load(); 
     }
+
+    std::function<void(const juce::String &)> onCaptureError;
 };

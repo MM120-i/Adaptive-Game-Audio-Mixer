@@ -1,4 +1,7 @@
+#define NOMINMAX
 #include "MainComponent.h"
+
+#include "ui/VolumeNotification.h"
 
 namespace {
     constexpr int sectionPad = 20;
@@ -115,6 +118,11 @@ void MainComponent::initCaptureSection(){
 
     addAndMakeVisible(startCaptureButton);
     styleButton(startCaptureButton);
+
+    captureEngine.onCaptureError = [this](const juce::String &msg){
+        VolumeNotification::show("Audio capture failed");
+        logger.error(msg);
+    };
 
     captureStatusLabel.setFont(bodyFont());
     captureStatusLabel.setJustificationType(juce::Justification::centredLeft);

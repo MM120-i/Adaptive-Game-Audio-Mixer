@@ -104,7 +104,7 @@ target_sources(AudioMixerTests
         tests/AppSettingsTest.cpp
         tests/VolumeControlTest.cpp
         tests/SpotifyClientTest.cpp
-        tests/Phase7Test.cpp
+        tests/IntegrationTest.cpp
         tests/OverlayHudTest.cpp
         src/ui/VolumeControl.cpp
         src/ui/VolumeControl.h

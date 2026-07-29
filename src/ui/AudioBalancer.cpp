@@ -142,8 +142,6 @@ void AudioBalancer::refreshSessions(){
     const bool canBalance = (spotifyPid > 0 && selectedGamePid > 0);
     crossFader.setEnabled(canBalance);
 
-    gameDropdown.setEnabled(gameDropdown.getNumItems() > 0);
-
     if(selectedGamePid > 0){
         for(size_t i = 0; i < gameDropdown.getNumItems(); i++){
             if(gameDropdown.getItemId(i) == selectedGamePid){

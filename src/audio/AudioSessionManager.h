@@ -33,7 +33,7 @@ public:
 
     void start();
     std::vector<AudioSessionInfo> getActiveSessions();
-    void setSessionVolume(int, float);
+    bool setSessionVolume(int, float);
     void resetAllVolumes();
     void refreshNow();
 
