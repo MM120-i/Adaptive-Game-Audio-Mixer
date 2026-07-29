@@ -107,7 +107,7 @@ void SystemTray::create(){
     nid.uID = trayId;
     nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     nid.uCallbackMessage = WM_TRAYICON;
-    nid.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+    nid.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(1));
 
     strcpy_s(nid.szTip, _countof(nid.szTip), "AudioMixer");
 
