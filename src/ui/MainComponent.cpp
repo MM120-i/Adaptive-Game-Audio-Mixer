@@ -284,7 +284,7 @@ void MainComponent::layoutNowPlayingCard(juce::Rectangle<float> &area){
 }
 
 void MainComponent::layoutSystemOutputCard(juce::Rectangle<float> &area){
-    systemOutputCardRect = area.removeFromTop(100.0f);
+    systemOutputCardRect = area.removeFromTop(130.0f);
     auto inner = systemOutputCardRect.reduced(innerPad);
 
     systemOutputSectionLabel.setText("System Output", juce::dontSendNotification);

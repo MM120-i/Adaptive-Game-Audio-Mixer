@@ -90,7 +90,7 @@ void LevelMeter::paint(juce::Graphics &g){
 
     for(const auto db : dbMarks){
         const auto amp = std::pow(10.0f, db / 20.0f);
-        const auto x = juce::jmax(barBounds.getX(), barBounds.getX() + barBounds.getWidth() * amp - 14.0f);
+        const auto x = juce::jlimit(barBounds.getX(), barBounds.getRight() - 28.0f, barBounds.getX() + barBounds.getWidth() * amp - 14.0f);
 
         if(x < lastLabelRight + 4.0f)
             continue;
