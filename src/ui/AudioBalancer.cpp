@@ -40,7 +40,7 @@ void AudioBalancer::initGameSelector(){
         updateVolumes();
     };
 
-    gameDropdown.setEnabled(false);
+    gameDropdown.setEnabled(true);
     addAndMakeVisible(gameDropdown);
 
     refreshButton.onClick = [this]{ 
@@ -59,8 +59,8 @@ void AudioBalancer::initCrossfader(){
     crossFader.setRange(0.0, 1.0, 0.01);
     crossFader.setValue(0.5, juce::dontSendNotification);
     crossFader.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    crossFader.setColour(juce::Slider::trackColourId, juce::Colour{0xff363840});
-    crossFader.setColour(juce::Slider::backgroundColourId, juce::Colour{0xff101418});
+    crossFader.setColour(juce::Slider::trackColourId, juce::Colour{0xff6366f1});
+    crossFader.setColour(juce::Slider::backgroundColourId, juce::Colour{0xff1e1b4b});
 
     crossFader.onValueChange = [this]{ 
         updateVolumes(); 

@@ -271,11 +271,8 @@ void MainComponent::layoutVolumeCard(const juce::Rectangle<float> &card){
 
     volumeSectionLabel.setText("Volume", juce::dontSendNotification);
     volumeSectionLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
-    inner.removeFromTop(6.0f);
-
-    auto vcHeight = 64.0f;
-    auto vcY = inner.getY() + (inner.getHeight() - vcHeight) * 0.5f;
-    volumeControl.setBounds(inner.withY(vcY).withHeight(vcHeight).toNearestInt());
+    inner.removeFromTop(8.0f);
+    volumeControl.setBounds(inner.toNearestInt());
 }
 
 void MainComponent::layoutNowPlayingCard(juce::Rectangle<float> &area){
@@ -321,6 +318,7 @@ void MainComponent::layoutSystemOutputCard(juce::Rectangle<float> &area){
     deviceInfoLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
     captureDetailsLabel.setBounds(inner.removeFromTop(16.0f).toNearestInt());
 }
+
 void MainComponent::populateDeviceDropdown(){
     auto savedId = outputDeviceDropdown.getSelectedId();
     outputDeviceDropdown.clear();

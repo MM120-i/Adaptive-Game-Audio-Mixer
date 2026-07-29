@@ -66,6 +66,7 @@ target_sources(AudioMixer
         src/ui/AudioBalancer.h
         src/ui/OverlayHud.cpp
         src/ui/OverlayHud.h
+        resources.rc
 )
 
 target_include_directories(AudioMixer
