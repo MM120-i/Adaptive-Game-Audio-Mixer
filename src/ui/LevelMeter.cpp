@@ -86,10 +86,16 @@ void LevelMeter::paint(juce::Graphics &g){
     g.setColour(juce::Colour{ 0xff7b7d84 });
 
     const float dbMarks[] = { -60.0f, -40.0f, -20.0f, -10.0f, -3.0f, 0.0f };
+    float lastLabelRight = barBounds.getX() - 999.0f;
 
     for(const auto db : dbMarks){
         const auto amp = std::pow(10.0f, db / 20.0f);
-        const auto x = barBounds.getX() + barBounds.getWidth() * amp - 14.0f;
+        const auto x = juce::jmax(barBounds.getX(), barBounds.getX() + barBounds.getWidth() * amp - 14.0f);
+
+        if(x < lastLabelRight + 4.0f)
+            continue;
+
+        lastLabelRight = x + 28.0f;
 
         juce::String label;
 
