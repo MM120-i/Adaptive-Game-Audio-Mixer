@@ -3,17 +3,18 @@
 namespace {
     constexpr int sectionPad = 20;
     constexpr int innerPad = 14;
-    constexpr int controlHeight = 32;
+    constexpr int controlHeight = 30;
     constexpr int gap = 12;
-    constexpr float cornerRadius = 8.0f;
+    constexpr float cornerRadius = 12.0f;
 
-    const juce::Colour bgDark{0xff1a1d23};
-    const juce::Colour bgCard{0xff252830};
-    const juce::Colour accent{0xff6366f1};
-    const juce::Colour textPrimary{0xffe4e4e7};
-    const juce::Colour textSecondary{0xff7b7d84};
-    const juce::Colour borderSubtle{0xff363840};
-    const juce::Colour statusGreen{0xff22c55e};
+    const juce::Colour bgDark{0xff0f1117};
+    const juce::Colour bgCard{0xff1a1d27};
+    const juce::Colour accent{0xff818cf8};
+    const juce::Colour accentDim{0xff4f46e5};
+    const juce::Colour textPrimary{0xfff1f5f9};
+    const juce::Colour textSecondary{0xff94a3b8};
+    const juce::Colour borderSubtle{0xff2e3344};
+    const juce::Colour statusGreen{0xff34d399};
 
     juce::Font sectionFont(){
         return juce::FontOptions{11.0f, juce::Font::bold};
@@ -28,10 +29,21 @@ namespace {
     }
 
     void drawCard(juce::Graphics &g, juce::Rectangle<float> r){
+        juce::DropShadow shadow{juce::Colours::black.withAlpha(0.4f), 8, {0, 2}};
+        shadow.drawForRectangle(g, r.toNearestInt());
+
         g.setColour(bgCard);
         g.fillRoundedRectangle(r, cornerRadius);
         g.setColour(borderSubtle);
-        g.drawRoundedRectangle(r, cornerRadius, 1.0f);
+        g.drawRoundedRectangle(r, cornerRadius, 0.5f);
+    }
+
+    void styleButton(juce::TextButton &btn){
+        btn.setColour(juce::TextButton::buttonColourId, accentDim);
+        btn.setColour(juce::TextButton::buttonOnColourId, accent);
+        btn.setColour(juce::TextButton::textColourOffId, textPrimary);
+        btn.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
+        btn.setLookAndFeel(nullptr);
     }
 }
 
@@ -101,6 +113,7 @@ void MainComponent::initCaptureSection(){
     };
 
     addAndMakeVisible(startCaptureButton);
+    styleButton(startCaptureButton);
 
     captureStatusLabel.setFont(bodyFont());
     captureStatusLabel.setJustificationType(juce::Justification::centredLeft);
@@ -117,6 +130,7 @@ void MainComponent::initCaptureSection(){
         populateDeviceDropdown();
     };
     addAndMakeVisible(refreshDevicesButton);
+    styleButton(refreshDevicesButton);
 
     populateDeviceDropdown();
 
@@ -129,8 +143,6 @@ void MainComponent::initCaptureSection(){
     captureDetailsLabel.setColour(juce::Label::textColourId, textSecondary);
     captureDetailsLabel.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(captureDetailsLabel);
-
-    addAndMakeVisible(levelMeter);
 }
 
 void MainComponent::initVolumeSection(){
@@ -158,6 +170,7 @@ void MainComponent::initSpotifySection(){
     };
 
     addAndMakeVisible(spotifyConnectButton);
+    styleButton(spotifyConnectButton);
 
     spotifyStatusLabel.setFont(bodyFont());
     spotifyStatusLabel.setColour(juce::Label::textColourId, textSecondary);
@@ -182,12 +195,15 @@ void MainComponent::initSpotifySection(){
 
     prevButton.onClick = [this]{ spotifyClient.skipPrevious(); };
     addAndMakeVisible(prevButton);
+    styleButton(prevButton);
 
     playPauseButton.onClick = [this]{ spotifyClient.setPlaying(!spotifyClient.isPlaying()); };
     addAndMakeVisible(playPauseButton);
+    styleButton(playPauseButton);
 
     nextButton.onClick = [this]{ spotifyClient.skipNext(); };
     addAndMakeVisible(nextButton);
+    styleButton(nextButton);
 
     nowPlayingSectionLabel.setFont(sectionFont());
     nowPlayingSectionLabel.setColour(juce::Label::textColourId, textSecondary);
@@ -284,7 +300,7 @@ void MainComponent::layoutNowPlayingCard(juce::Rectangle<float> &area){
 }
 
 void MainComponent::layoutSystemOutputCard(juce::Rectangle<float> &area){
-    systemOutputCardRect = area.removeFromTop(130.0f);
+    systemOutputCardRect = area.removeFromTop(150.0f);
     auto inner = systemOutputCardRect.reduced(innerPad);
 
     systemOutputSectionLabel.setText("System Output", juce::dontSendNotification);
@@ -303,8 +319,6 @@ void MainComponent::layoutSystemOutputCard(juce::Rectangle<float> &area){
     inner.removeFromTop(6.0f);
     deviceInfoLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
     captureDetailsLabel.setBounds(inner.removeFromTop(16.0f).toNearestInt());
-    inner.removeFromTop(6.0f);
-    levelMeter.setBounds(inner.toNearestInt());
 }
 
 void MainComponent::populateDeviceDropdown(){
@@ -322,7 +336,6 @@ void MainComponent::timerCallback(){
     const auto capturing = captureEngine.isCapturing();
     const auto level = capturing ? captureEngine.getCurrentLevel() : 0.0f;
 
-    levelMeter.setLevel(level);
     audioBalancer.setSystemLevel(level);
 
     if(wasCapturing && !capturing && captureEngine.getCaptureError().isNotEmpty()){

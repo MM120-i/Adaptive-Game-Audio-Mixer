@@ -46,29 +46,28 @@ void LevelMeter::paint(juce::Graphics &g){
     const auto barBounds = bounds.withHeight(barHeight);
     const auto labelY = barBounds.getBottom() + 4.0f;
 
-    g.setColour(juce::Colour{ 0xff101418 });
+    g.setColour(juce::Colour{0xff0a0c13});
     g.fillRoundedRectangle(barBounds, 6.0f);
 
     const auto filledWidth = barBounds.getWidth() * decay;
 
     if(filledWidth > 1.0f){
-        juce::ColourGradient gradient { 
-            juce::Colour::fromFloatRGBA(0.15f, 0.85f, 0.25f, 1.0f),
+        juce::ColourGradient gradient{
+            juce::Colour{0xff818cf8},
             barBounds.getX(),
             barBounds.getY(),
-            juce::Colour::fromFloatRGBA(0.95f, 0.2f, 0.1f, 1.0f),
+            juce::Colour{0xffa78bfa},
             barBounds.getRight(),
             barBounds.getY(),
-            false, 
+            false,
         };
 
         g.setGradientFill(gradient);
-        g.fillRoundedRectangle(barBounds.withWidth(filledWidth), 6.0f);
+        g.fillRoundedRectangle(barBounds.withWidth(filledWidth), 4.0f);
 
-        if (decay > 0.1f){
-            g.setColour(levelColour(decay).withAlpha(0.4f));
-            const auto glowRect = barBounds.withWidth(filledWidth);
-            g.drawRoundedRectangle(glowRect.expanded(2.0f), 8.0f, 1.5f);
+        if(decay > 0.1f){
+            g.setColour(juce::Colour{0xff818cf8}.withAlpha(0.3f));
+            g.drawRoundedRectangle(barBounds.withWidth(filledWidth).expanded(3.0f), 8.0f, 2.0f);
         }
     }
 
@@ -76,14 +75,14 @@ void LevelMeter::paint(juce::Graphics &g){
     const auto peakX = barBounds.getX() + barBounds.getWidth() * peakAmp;
 
     if(peakDb > -60.0f){
-        g.setColour(juce::Colours::white.withAlpha(0.8f));
+        g.setColour(juce::Colours::white.withAlpha(0.9f));
         g.drawLine(peakX, barBounds.getY() - 2.0f, peakX, barBounds.getBottom() + 2.0f, 2.0f);
     }
 
-    g.setColour(juce::Colour{ 0xff363840 });
-    g.drawRoundedRectangle(barBounds, 6.0f, 1.0f);
-    g.setFont(juce::FontOptions{ 11.0f });
-    g.setColour(juce::Colour{ 0xff7b7d84 });
+    g.setColour(juce::Colour{0xff2e3344});
+    g.drawRoundedRectangle(barBounds, 6.0f, 0.5f);
+    g.setFont(juce::FontOptions{10.0f});
+    g.setColour(juce::Colour{0xff64748b});
 
     const float dbMarks[] = { -60.0f, -40.0f, -20.0f, -10.0f, -3.0f, 0.0f };
     float lastLabelRight = barBounds.getX() - 999.0f;
@@ -109,11 +108,11 @@ void LevelMeter::paint(juce::Graphics &g){
 
     const auto dbNow = amplitudeToDb(level);
 
-    g.setColour(juce::Colour{ 0xffe4e4e7 });
-    g.setFont(juce::FontOptions{ 12.0f, juce::Font::bold });
+    g.setColour(juce::Colour{0xfff1f5f9});
+    g.setFont(juce::FontOptions{11.0f, juce::Font::bold});
 
     g.drawText(
-        juce::String (dbNow, 1) + " dB",
+        juce::String(dbNow, 1) + " dB",
         barBounds.getRight() - 80.0f,
         barBounds.getY() - 18.0f,
         76.0f,

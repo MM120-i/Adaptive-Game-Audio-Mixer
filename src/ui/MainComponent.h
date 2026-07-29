@@ -51,7 +51,6 @@ private:
     juce::Label deviceInfoLabel;
     juce::Label captureDetailsLabel;
 
-    LevelMeter levelMeter;
     juce::Label volumeSectionLabel;
     juce::Label nowPlayingSectionLabel;
 
