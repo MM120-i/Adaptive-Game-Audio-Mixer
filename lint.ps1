@@ -22,7 +22,7 @@ Write-Host ("MSVC /analyze:  {0} warnings  |  {1} errors" -f $warnings, $errors)
 if (Get-Command cppcheck -ErrorAction SilentlyContinue) {
     Write-Host ""
     Write-Host "==> Running cppcheck..." -ForegroundColor Cyan
-    $cppcheckOutput = & cppcheck --enable=all --check-level=exhaustive --suppress=missingInclude --suppress=missingIncludeSystem --suppress=unusedFunction --suppress=checkersReport --suppress=cstyleCast --suppress=unknownMacro -I src/ src/ 2>&1
+    $cppcheckOutput = & cppcheck --enable=all --check-level=exhaustive --suppress=missingInclude --suppress=missingIncludeSystem --suppress=unusedFunction --suppress=checkersReport --suppress=cstyleCast -I src/ src/ 2>&1
     $cppcheckOutput | ForEach-Object { Write-Host $_ }
     $issues = ($cppcheckOutput -match "^(warning|error|style|performance|portability):" | Measure-Object).Count
     Write-Host ""

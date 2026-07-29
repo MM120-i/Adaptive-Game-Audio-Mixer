@@ -35,6 +35,7 @@ public:
     explicit AudioBalancer(AudioSessionManager &);
 
     void refreshSessions();
+    void clearSpotify();
     void setSystemLevel(float);
     void resized() override;
 

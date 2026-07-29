@@ -3,8 +3,9 @@
 #include <algorithm>
 
 namespace {
-    constexpr int buttonSize = 28;
-    constexpr int labelWidth = 52;
+    constexpr int buttonWidth = 60;
+    constexpr int buttonHeight = 26;
+    constexpr int labelWidth = 68;
     constexpr int rowGap = 4;
 
     const juce::Colour accentColour{0xff6366f1};
@@ -118,6 +119,11 @@ void VolumeControl::timerCallback(){
         commitCallback(currentVolume);
 }
 
+void VolumeControl::setControlsEnabled(bool enabled){
+    volumeSlider.setEnabled(enabled);
+    muteButton.setEnabled(enabled);
+}
+
 void VolumeControl::resized(){
     const auto bounds = getLocalBounds().toFloat();
     const auto labelWidthF = static_cast<float>(labelWidth);
@@ -141,10 +147,10 @@ void VolumeControl::resized(){
     const auto buttonY = bounds.getY() + 24.0f + 4.0f;
 
     muteButton.setBounds(
-        static_cast<int>(centerX - buttonSize * 0.5f),
+        static_cast<int>(centerX - buttonWidth * 0.5f),
         static_cast<int>(buttonY),
-        buttonSize,
-        buttonSize
+        buttonWidth,
+        buttonHeight
     );
 }
 

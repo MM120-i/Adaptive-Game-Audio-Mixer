@@ -52,7 +52,6 @@ MainComponent::MainComponent(AppSettings &appSettings, const SettingsStore &stor
     updateCaptureStatus();
     addAndMakeVisible(audioBalancer);
     startTimerHz(20);
-    logger.info("UI created.");
 }
 
 void MainComponent::initHeader(){
@@ -82,7 +81,13 @@ void MainComponent::initCaptureSection(){
         }
         else{
             auto errorMsg = juce::String();
-            if(captureEngine.startCapture(errorMsg)){
+            juce::String deviceId;
+            auto selId = outputDeviceDropdown.getSelectedId();
+
+            if(selId > 1 && static_cast<size_t>(selId - 2) < deviceList_.size())
+                deviceId = deviceList_[selId - 2].second;
+
+            if(captureEngine.startCapture(errorMsg, deviceId)){
                 startCaptureButton.setButtonText("Stop Capture");
                 logger.info("Capture started on: " + captureEngine.getDeviceName());
                 logger.info(captureEngine.getDeviceDiagnostics());
@@ -91,13 +96,29 @@ void MainComponent::initCaptureSection(){
                 logger.error("Capture failed: " + errorMsg);
             }
         }
+
         updateCaptureStatus();
     };
+
     addAndMakeVisible(startCaptureButton);
 
     captureStatusLabel.setFont(bodyFont());
     captureStatusLabel.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(captureStatusLabel);
+
+    outputDeviceDropdown.setColour(juce::ComboBox::backgroundColourId, juce::Colour{0xff101418});
+    outputDeviceDropdown.setColour(juce::ComboBox::textColourId, juce::Colour{0xffe4e4e7});
+    outputDeviceDropdown.setColour(juce::ComboBox::outlineColourId, juce::Colour{0xff363840});
+    outputDeviceDropdown.setTextWhenNothingSelected("Default output device");
+    outputDeviceDropdown.setTextWhenNoChoicesAvailable("No devices found");
+    addAndMakeVisible(outputDeviceDropdown);
+
+    refreshDevicesButton.onClick = [this]{
+        populateDeviceDropdown();
+    };
+    addAndMakeVisible(refreshDevicesButton);
+
+    populateDeviceDropdown();
 
     deviceInfoLabel.setFont(bodyFont());
     deviceInfoLabel.setColour(juce::Label::textColourId, textPrimary);
@@ -122,6 +143,7 @@ void MainComponent::initVolumeSection(){
         spotifyClient.setVolume(volumePercent);
         volumeChanging_ = false;
     });
+
     addAndMakeVisible(volumeControl);
 }
 
@@ -131,8 +153,10 @@ void MainComponent::initSpotifySection(){
             spotifyClient.disconnect();
         else
             spotifyClient.startAuth();
+
         updateSpotifyUi();
     };
+
     addAndMakeVisible(spotifyConnectButton);
 
     spotifyStatusLabel.setFont(bodyFont());
@@ -142,12 +166,17 @@ void MainComponent::initSpotifySection(){
 
     spotifyClient.onStateChanged = [this]{
         const auto newStatus = spotifyClient.status();
+
         if(newStatus != lastSpotifyStatus){
             lastSpotifyStatus = newStatus;
             spotifyClient.saveTokens(settings);
+
             if(newStatus == SpotifyStatus::Connected)
                 spotifyClient.fetchDeviceVolume();
+            else if(newStatus == SpotifyStatus::Disconnected)
+                audioBalancer.clearSpotify();
         }
+
         updateSpotifyUi();
     };
 
@@ -171,6 +200,7 @@ void MainComponent::initSessionMonitor(){
             audioBalancer.refreshSessions();
         });
     };
+    
     sessionManager.start();
 }
 
@@ -226,7 +256,7 @@ void MainComponent::layoutVolumeCard(const juce::Rectangle<float> &card){
     volumeSectionLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
     inner.removeFromTop(6.0f);
 
-    auto vcHeight = 60.0f;
+    auto vcHeight = 64.0f;
     auto vcY = inner.getY() + (inner.getHeight() - vcHeight) * 0.5f;
     volumeControl.setBounds(inner.withY(vcY).withHeight(vcHeight).toNearestInt());
 }
@@ -262,6 +292,10 @@ void MainComponent::layoutSystemOutputCard(juce::Rectangle<float> &area){
     inner.removeFromTop(4.0f);
 
     auto buttonRow = inner.removeFromTop(static_cast<float>(controlHeight));
+    outputDeviceDropdown.setBounds(buttonRow.removeFromLeft(inner.getWidth() * 0.55f).toNearestInt());
+    buttonRow.removeFromLeft(6.0f);
+    refreshDevicesButton.setBounds(buttonRow.removeFromLeft(70.0f).toNearestInt());
+    buttonRow.removeFromLeft(6.0f);
     startCaptureButton.setBounds(buttonRow.removeFromLeft(140.0f).toNearestInt());
     buttonRow.removeFromLeft(10.0f);
     captureStatusLabel.setBounds(buttonRow.toNearestInt());
@@ -271,6 +305,17 @@ void MainComponent::layoutSystemOutputCard(juce::Rectangle<float> &area){
     captureDetailsLabel.setBounds(inner.removeFromTop(16.0f).toNearestInt());
     inner.removeFromTop(6.0f);
     levelMeter.setBounds(inner.toNearestInt());
+}
+
+void MainComponent::populateDeviceDropdown(){
+    outputDeviceDropdown.clear();
+    outputDeviceDropdown.addItem("Default", 1);
+    deviceList_ = AudioCaptureEngine::enumerateRenderDevices();
+
+    for(size_t i = 0; i < deviceList_.size(); i++)
+        outputDeviceDropdown.addItem(deviceList_[i].first, static_cast<int>(i + 2));
+
+    outputDeviceDropdown.setSelectedId(1, juce::dontSendNotification);
 }
 
 void MainComponent::timerCallback(){
@@ -296,8 +341,13 @@ void MainComponent::timerCallback(){
             juce::dontSendNotification
         );
     }
+    else {
+        deviceInfoLabel.setText({}, juce::dontSendNotification);
+        captureDetailsLabel.setText({}, juce::dontSendNotification);
+    }
 
     spotifyPollCounter++;
+
     if(spotifyPollCounter >= 40){
         spotifyPollCounter = 0;
         updateSpotifyUi();
@@ -323,7 +373,7 @@ void MainComponent::updateSpotifyUi(){
             volumeControl.setVolume(spotVol);
     }
 
-    volumeControl.setEnabled(spotifyClient.isAuthenticated() && spotifyClient.hasActiveDevice());
+    volumeControl.setControlsEnabled(spotifyClient.isAuthenticated() && spotifyClient.hasActiveDevice());
 
     playPauseButton.setButtonText(spotifyClient.isPlaying()
         ? juce::String::fromUTF8("\xe2\x8f\xb8")
@@ -339,9 +389,6 @@ void MainComponent::updateSpotifyUi(){
             spotifyConnectButton.setButtonText("Connect Spotify");
             spotifyStatusLabel.setText("Connecting... check your browser", juce::dontSendNotification);
             return;
-
-        default:
-            break;
     }
 
     if(spotifyClient.isAuthenticated()){

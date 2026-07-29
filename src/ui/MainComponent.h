@@ -23,6 +23,7 @@ private:
     void initVolumeSection();
     void initSpotifySection();
     void initSessionMonitor();
+    void populateDeviceDropdown();
 
     void layoutHeader(juce::Rectangle<float> &area);
     void layoutMixerCard(const juce::Rectangle<float> &card);
@@ -44,6 +45,9 @@ private:
     juce::Label systemOutputSectionLabel;
     juce::TextButton startCaptureButton{"Start Capture"};
     juce::Label captureStatusLabel;
+    juce::ComboBox outputDeviceDropdown;
+    juce::TextButton refreshDevicesButton{"Refresh"};
+    std::vector<std::pair<juce::String, juce::String>> deviceList_;
     juce::Label deviceInfoLabel;
     juce::Label captureDetailsLabel;
 

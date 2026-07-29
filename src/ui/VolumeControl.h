@@ -14,6 +14,7 @@ public:
     }
 
     void setVolume(int);
+    void setControlsEnabled(bool);
 
     int getVolume() const { 
         return currentVolume; 

@@ -173,6 +173,13 @@ void AudioBalancer::updateVolumes(){
     gameVolLabel.setText(juce::String(static_cast<int>(gameVol * 100)) + "%", juce::dontSendNotification);
 }
 
+void AudioBalancer::clearSpotify(){
+    spotifyPid = 0;
+    musicAppLabel.setText({}, juce::dontSendNotification);
+    musicVolLabel.setText({}, juce::dontSendNotification);
+    crossFader.setEnabled(false);
+}
+
 void AudioBalancer::setSystemLevel(float level){
     levelMeter.setLevel(level);
 }

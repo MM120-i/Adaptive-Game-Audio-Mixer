@@ -29,8 +29,27 @@ public:
         return true; 
     }
 
+    bool canUseHotkeys(){
+        if(!mainWindow)
+            return false;
+
+        const auto &mc = mainWindow->getMainComponent();
+
+        if(!mc.captureEngine.isCapturing()){
+            VolumeNotification::show("Start capture first");
+            return false;
+        }
+
+        if(!mc.spotifyClient.isAuthenticated()){
+            VolumeNotification::show("Connect Spotify first");
+            return false;
+        }
+
+        return true;
+    }
+
     void adjustVolume(float delta) {
-        if(!mainWindow) 
+        if(!canUseHotkeys())
             return;
 
         auto &balancer = mainWindow->getMainComponent().audioBalancer;
@@ -46,7 +65,7 @@ public:
     }
 
     void toggleMute() {
-        if(!mainWindow) 
+        if(!canUseHotkeys())
             return;
 
         auto &vc = mainWindow->getMainComponent().volumeControl;
@@ -61,7 +80,7 @@ public:
     }
 
     void togglePlayPause() {
-        if(!mainWindow) 
+        if(!canUseHotkeys())
             return;
 
         auto &sc = mainWindow->getMainComponent().spotifyClient;
@@ -72,7 +91,7 @@ public:
     }
 
     void skipNext() {
-        if(!mainWindow) 
+        if(!canUseHotkeys())
             return;
 
         mainWindow->getMainComponent().spotifyClient.skipNext();
@@ -154,6 +173,8 @@ public:
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, VK_LEFT, [this]{ 
+            if(!canUseHotkeys())
+                return;
             mainWindow->getMainComponent().spotifyClient.skipPrevious();
             flashHud(); 
         });
