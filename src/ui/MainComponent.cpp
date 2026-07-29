@@ -226,7 +226,9 @@ void MainComponent::layoutVolumeCard(const juce::Rectangle<float> &card){
     volumeSectionLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
     inner.removeFromTop(6.0f);
 
-    volumeControl.setBounds(inner.toNearestInt());
+    auto vcHeight = 60.0f;
+    auto vcY = inner.getY() + (inner.getHeight() - vcHeight) * 0.5f;
+    volumeControl.setBounds(inner.withY(vcY).withHeight(vcHeight).toNearestInt());
 }
 
 void MainComponent::layoutNowPlayingCard(juce::Rectangle<float> &area){

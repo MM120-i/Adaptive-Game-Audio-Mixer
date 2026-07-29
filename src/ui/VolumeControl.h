@@ -32,7 +32,7 @@ private:
     void timerCallback() override;
 
     juce::Slider volumeSlider;
-    juce::TextButton muteButton{"M"};
+    juce::TextButton muteButton{"Mute"};
     juce::Label volumeLabel;
 
     int currentVolume = 65;
