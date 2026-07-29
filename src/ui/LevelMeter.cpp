@@ -46,17 +46,17 @@ void LevelMeter::paint(juce::Graphics &g){
     const auto barBounds = bounds.withHeight(barHeight);
     const auto labelY = barBounds.getBottom() + 4.0f;
 
-    g.setColour(juce::Colour{0xff0a0c13});
+    g.setColour(juce::Colour{0xff05050d});
     g.fillRoundedRectangle(barBounds, 6.0f);
 
     const auto filledWidth = barBounds.getWidth() * decay;
 
     if(filledWidth > 1.0f){
         juce::ColourGradient gradient{
-            juce::Colour{0xff818cf8},
+            juce::Colour{0xff06b6d4},
             barBounds.getX(),
             barBounds.getY(),
-            juce::Colour{0xffa78bfa},
+            juce::Colour{0xffd946ef},
             barBounds.getRight(),
             barBounds.getY(),
             false,
@@ -66,7 +66,7 @@ void LevelMeter::paint(juce::Graphics &g){
         g.fillRoundedRectangle(barBounds.withWidth(filledWidth), 4.0f);
 
         if(decay > 0.1f){
-            g.setColour(juce::Colour{0xff818cf8}.withAlpha(0.3f));
+            g.setColour(juce::Colour{0xff06b6d4}.withAlpha(0.3f));
             g.drawRoundedRectangle(barBounds.withWidth(filledWidth).expanded(3.0f), 8.0f, 2.0f);
         }
     }
@@ -79,10 +79,10 @@ void LevelMeter::paint(juce::Graphics &g){
         g.drawLine(peakX, barBounds.getY() - 2.0f, peakX, barBounds.getBottom() + 2.0f, 2.0f);
     }
 
-    g.setColour(juce::Colour{0xff2e3344});
+    g.setColour(juce::Colour{0xff1e293b});
     g.drawRoundedRectangle(barBounds, 6.0f, 0.5f);
     g.setFont(juce::FontOptions{10.0f});
-    g.setColour(juce::Colour{0xff64748b});
+    g.setColour(juce::Colour{0xff475569});
 
     const float dbMarks[] = { -60.0f, -40.0f, -20.0f, -10.0f, -3.0f, 0.0f };
     float lastLabelRight = barBounds.getX() - 999.0f;

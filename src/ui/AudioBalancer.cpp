@@ -174,9 +174,15 @@ void AudioBalancer::updateVolumes(){
 }
 
 void AudioBalancer::clearSpotify(){
+    if(selectedGamePid > 0){
+        sessionManager.setSessionVolume(selectedGamePid, 1.0f);
+        gameVolLabel.setText("100%", juce::dontSendNotification);
+    }
+
     spotifyPid = 0;
     musicAppLabel.setText({}, juce::dontSendNotification);
     musicVolLabel.setText({}, juce::dontSendNotification);
+    crossFader.setValue(1.0, juce::dontSendNotification);
     crossFader.setEnabled(false);
 }
 

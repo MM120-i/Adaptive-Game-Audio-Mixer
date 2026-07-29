@@ -7,14 +7,15 @@ namespace {
     constexpr int gap = 12;
     constexpr float cornerRadius = 12.0f;
 
-    const juce::Colour bgDark{0xff0f1117};
-    const juce::Colour bgCard{0xff1a1d27};
-    const juce::Colour accent{0xff818cf8};
-    const juce::Colour accentDim{0xff4f46e5};
+    const juce::Colour bgDark{0xff0a0a14};
+    const juce::Colour bgCard{0xff12121f};
+    const juce::Colour accent{0xff06b6d4};
+    const juce::Colour accentDim{0xff0891b2};
+    const juce::Colour accentGlow{0xff00f0ff};
     const juce::Colour textPrimary{0xfff1f5f9};
     const juce::Colour textSecondary{0xff94a3b8};
-    const juce::Colour borderSubtle{0xff2e3344};
-    const juce::Colour statusGreen{0xff34d399};
+    const juce::Colour borderSubtle{0xff1e293b};
+    const juce::Colour statusGreen{0xff10ff7e};
 
     juce::Font sectionFont(){
         return juce::FontOptions{11.0f, juce::Font::bold};
@@ -39,9 +40,9 @@ namespace {
     }
 
     void styleButton(juce::TextButton &btn){
-        btn.setColour(juce::TextButton::buttonColourId, accentDim);
-        btn.setColour(juce::TextButton::buttonOnColourId, accent);
-        btn.setColour(juce::TextButton::textColourOffId, textPrimary);
+        btn.setColour(juce::TextButton::buttonColourId, juce::Colour{0xff6366f1});
+        btn.setColour(juce::TextButton::buttonOnColourId, juce::Colour{0xff818cf8});
+        btn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
         btn.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
         btn.setLookAndFeel(nullptr);
     }
@@ -320,16 +321,17 @@ void MainComponent::layoutSystemOutputCard(juce::Rectangle<float> &area){
     deviceInfoLabel.setBounds(inner.removeFromTop(18.0f).toNearestInt());
     captureDetailsLabel.setBounds(inner.removeFromTop(16.0f).toNearestInt());
 }
-
 void MainComponent::populateDeviceDropdown(){
+    auto savedId = outputDeviceDropdown.getSelectedId();
     outputDeviceDropdown.clear();
     outputDeviceDropdown.addItem("Default", 1);
+
     deviceList_ = AudioCaptureEngine::enumerateRenderDevices();
 
     for(size_t i = 0; i < deviceList_.size(); i++)
         outputDeviceDropdown.addItem(deviceList_[i].first, static_cast<int>(i + 2));
 
-    outputDeviceDropdown.setSelectedId(1, juce::dontSendNotification);
+    outputDeviceDropdown.setSelectedId(savedId > 0 ? savedId : 1, juce::dontSendNotification);
 }
 
 void MainComponent::timerCallback(){

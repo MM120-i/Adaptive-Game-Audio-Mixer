@@ -45,6 +45,11 @@ public:
             return false;
         }
 
+        if(!mc.spotifyClient.hasActiveDevice()){
+            VolumeNotification::show("No active Spotify device");
+            return false;
+        }
+
         return true;
     }
 
@@ -65,12 +70,8 @@ public:
     }
 
     void toggleMute() {
-        if(!canUseHotkeys())
-            return;
-
         auto &vc = mainWindow->getMainComponent().volumeControl;
         vc.setMuted(!vc.isMuted());
-
         VolumeNotification::show(vc.isMuted() ? juce::String("Muted") : juce::String("Volume: ") + juce::String(vc.getVolume()) + "%");
 
         if(trayIcon)
@@ -161,6 +162,9 @@ public:
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, 'M', [this]{ 
+            if(!canUseHotkeys())
+                return;
+                
             toggleMute(); 
         });
 
