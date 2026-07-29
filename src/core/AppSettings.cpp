@@ -1,8 +1,8 @@
 #include "AppSettings.h"
 
 namespace {
-    constexpr int minimumWindowWidth = 640;
-    constexpr int minimumWindowHeight = 420;
+    constexpr int minimumWindowWidth = 700;
+    constexpr int minimumWindowHeight = 700;
     constexpr int maximumWindowWidth = 3840;
     constexpr int maximumWindowHeight = 2160;
 

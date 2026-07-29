@@ -260,6 +260,8 @@ private:
             mainComponent = component.get();
 
             setContentOwned(component.release(), true);
+            settings.windowWidth = juce::jlimit(700, 4000, settings.windowWidth);
+            settings.windowHeight = juce::jlimit(700, 5000, settings.windowHeight);
             centreWithSize(settings.windowWidth, settings.windowHeight);
             setVisible(true);
         }

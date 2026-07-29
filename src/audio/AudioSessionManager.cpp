@@ -182,7 +182,7 @@ void AudioSessionManager::runMonitor(){
             }
         }
 
-        for(size_t tick = 0; tick < 2 && running && !forceRefresh; tick++)
+        for(size_t tick = 0; tick < 20 && running && !forceRefresh; tick++)
             Sleep(50);
 
         forceRefresh = false;

@@ -11,8 +11,8 @@ public:
         {
             const auto defaults = AppSettings::createDefaults();
 
-            expectGreaterOrEqual(defaults.windowWidth, 640);
-            expectGreaterOrEqual(defaults.windowHeight, 420);
+            expectGreaterOrEqual(defaults.windowWidth, 700);
+            expectGreaterOrEqual(defaults.windowHeight, 700);
             expect(defaults.lastLaunchTimestamp.isNotEmpty());
         }
 
@@ -67,7 +67,7 @@ public:
             const auto settings = AppSettings::fromJson(json, usedDefaults);
 
             expect(usedDefaults == true);
-            expectGreaterOrEqual(settings.windowWidth, 640);
+            expectGreaterOrEqual(settings.windowWidth, 700);
         }
     }
 };
