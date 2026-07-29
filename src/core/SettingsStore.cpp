@@ -24,11 +24,24 @@ SettingsLoadResult SettingsStore::load() const {
     auto parsed = juce::var();
     const auto parseResult = juce::JSON::parse(configFile.loadFileAsString(), parsed);
 
-    if (parseResult.failed()){
+    if(parseResult.failed()){
+        auto backupFile = appDataDirectory.getChildFile("settings.json.bak");
+
+        if(backupFile.existsAsFile()){
+            auto backupParsed = juce::var();
+            auto backupResult = juce::JSON::parse(backupFile.loadFileAsString(), backupParsed);
+
+            if(!backupResult.failed()){
+                auto usedDefaults = false;
+                result.settings = AppSettings::fromJson(backupParsed, usedDefaults);
+                result.message = "Settings file was corrupted; restored from backup.";
+                return result;
+            }
+        }
+
         result.settings = AppSettings::createDefaults();
         result.recoveredFromError = true;
         result.message = "Settings file is invalid; using defaults. " + parseResult.getErrorMessage();
-        
         return result;
     }
 
@@ -46,13 +59,17 @@ bool SettingsStore::save (const AppSettings &settings, juce::String &errorMessag
         return false;
     }
 
-    if (!getConfigFile().replaceWithText(juce::JSON::toString(settings.toJson(), true))){
-        errorMessage = "Could not write settings file: " + getConfigFile().getFullPathName();
+    auto configFile = getConfigFile();
+
+    if(configFile.existsAsFile())
+        configFile.copyFileTo(appDataDirectory.getChildFile("settings.json.bak"));
+
+    if (!configFile.replaceWithText(juce::JSON::toString(settings.toJson(), true))){
+        errorMessage = "Could not write settings file: " + configFile.getFullPathName();
         return false;
     }
 
     errorMessage = {};
-
     return true;
 }
 
