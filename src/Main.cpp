@@ -29,8 +29,32 @@ public:
         return true; 
     }
 
+    bool canUseHotkeys(){
+        if(!mainWindow)
+            return false;
+
+        const auto &mc = mainWindow->getMainComponent();
+
+        if(!mc.captureEngine.isCapturing()){
+            VolumeNotification::show("Start capture first");
+            return false;
+        }
+
+        if(!mc.spotifyClient.isAuthenticated()){
+            VolumeNotification::show("Connect Spotify first");
+            return false;
+        }
+
+        if(!mc.spotifyClient.hasActiveDevice()){
+            VolumeNotification::show("No active Spotify device");
+            return false;
+        }
+
+        return true;
+    }
+
     void adjustVolume(float delta) {
-        if(!mainWindow) 
+        if(!canUseHotkeys())
             return;
 
         auto &balancer = mainWindow->getMainComponent().audioBalancer;
@@ -46,12 +70,8 @@ public:
     }
 
     void toggleMute() {
-        if(!mainWindow) 
-            return;
-
         auto &vc = mainWindow->getMainComponent().volumeControl;
         vc.setMuted(!vc.isMuted());
-
         VolumeNotification::show(vc.isMuted() ? juce::String("Muted") : juce::String("Volume: ") + juce::String(vc.getVolume()) + "%");
 
         if(trayIcon)
@@ -61,7 +81,7 @@ public:
     }
 
     void togglePlayPause() {
-        if(!mainWindow) 
+        if(!canUseHotkeys())
             return;
 
         auto &sc = mainWindow->getMainComponent().spotifyClient;
@@ -72,7 +92,7 @@ public:
     }
 
     void skipNext() {
-        if(!mainWindow) 
+        if(!canUseHotkeys())
             return;
 
         mainWindow->getMainComponent().spotifyClient.skipNext();
@@ -142,6 +162,9 @@ public:
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, 'M', [this]{ 
+            if(!canUseHotkeys())
+                return;
+                
             toggleMute(); 
         });
 
@@ -154,6 +177,8 @@ public:
         });
 
         hotkeys->add(MOD_CONTROL | MOD_SHIFT, VK_LEFT, [this]{ 
+            if(!canUseHotkeys())
+                return;
             mainWindow->getMainComponent().spotifyClient.skipPrevious();
             flashHud(); 
         });
@@ -227,17 +252,20 @@ private:
         MainWindow(juce::String name, AppSettings &appSettings, const SettingsStore &store, AppLogger &appLogger) : 
             DocumentWindow(std::move(name),
             juce::Desktop::getInstance().getDefaultLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId),
-            DocumentWindow::allButtons),
+            DocumentWindow::minimiseButton | DocumentWindow::closeButton),
             settings(appSettings)
         {
 
             setUsingNativeTitleBar(true);
             setResizable(true, true);
+            setResizeLimits(700, 700, 4000, 5000);
 
             auto component = std::make_unique<MainComponent>(settings, store, appLogger);
             mainComponent = component.get();
 
             setContentOwned(component.release(), true);
+            settings.windowWidth = juce::jlimit(700, 4000, settings.windowWidth);
+            settings.windowHeight = juce::jlimit(700, 5000, settings.windowHeight);
             centreWithSize(settings.windowWidth, settings.windowHeight);
             setVisible(true);
         }

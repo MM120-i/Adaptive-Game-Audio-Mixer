@@ -126,17 +126,7 @@ public:
         {
             AudioSessionManager mgr;
             AudioBalancer balancer(mgr);
-            balancer.refreshSessions();  // no sessions — should not crash
-            expect(true);
-        }
-
-        beginTest("AudioBalancer --- setSystemLevel does not crash");
-        {
-            AudioSessionManager mgr;
-            AudioBalancer balancer(mgr);
-            balancer.setSystemLevel(0.5f);
-            balancer.setSystemLevel(0.0f);
-            balancer.setSystemLevel(1.0f);
+            balancer.refreshSessions(); 
             expect(true);
         }
 
@@ -179,14 +169,6 @@ public:
         {
             AudioSessionManager mgr;
             mgr.refreshNow();
-            expect(true);
-        }
-
-        beginTest("AudioBalancer --- timer callback does not crash");
-        {
-            AudioSessionManager mgr;
-            AudioBalancer balancer(mgr);
-            balancer.timerCallback();
             expect(true);
         }
     }

@@ -77,7 +77,9 @@ AudioCaptureEngine::~AudioCaptureEngine() {
     stopCapture(); 
 }
 
-bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
+bool AudioCaptureEngine::startCapture(juce::String &errorMessage, const juce::String &deviceId){
+    stopCapture();
+
     const HRESULT coInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     const bool weInitedCom = SUCCEEDED(coInit) && coInit != RPC_E_CHANGED_MODE;
 
@@ -94,7 +96,14 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage){
     }
 
     ComPtr endpoint;
-    hr = reinterpret_cast<IMMDeviceEnumerator *>(mmdev.p)->GetDefaultAudioEndpoint(eRender, eConsole, reinterpret_cast<IMMDevice **>(endpoint.addr()));
+
+    if(deviceId.isNotEmpty()){
+        hr = reinterpret_cast<IMMDeviceEnumerator *>(mmdev.p)->GetDevice(deviceId.toWideCharPointer(), reinterpret_cast<IMMDevice **>(endpoint.addr()));
+    }
+    else {
+        hr = reinterpret_cast<IMMDeviceEnumerator *>(mmdev.p)->GetDefaultAudioEndpoint(eRender, eConsole, reinterpret_cast<IMMDevice **>(endpoint.addr()));
+    }
+
     mmdev.reset(); 
 
     if(FAILED(hr)){
@@ -302,4 +311,61 @@ void AudioCaptureEngine::stopCapture(){
 
 bool AudioCaptureEngine::isCapturing() const { 
     return capturing.load(); 
+}
+
+std::vector<std::pair<juce::String, juce::String>> AudioCaptureEngine::enumerateRenderDevices(){
+    std::vector<std::pair<juce::String, juce::String>> devices;
+    const bool comOk = SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+
+    IMMDeviceEnumerator *enumerator = nullptr;
+
+    if(SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
+                                  __uuidof(IMMDeviceEnumerator), (void **)&enumerator))){
+        IMMDeviceCollection *collection = nullptr;
+
+        if(SUCCEEDED(enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &collection))){
+            UINT count = 0;
+            collection->GetCount(&count);
+
+            for(UINT i = 0; i < count; i++){
+                IMMDevice *device = nullptr;
+
+                if(SUCCEEDED(collection->Item(i, &device))){
+                    LPWSTR deviceId = nullptr;
+
+                    if(SUCCEEDED(device->GetId(&deviceId))){
+                        IPropertyStore *props = nullptr;
+
+                        if(SUCCEEDED(device->OpenPropertyStore(STGM_READ, &props))){
+                            PROPVARIANT nameVar;
+                            PropVariantInit(&nameVar);
+
+                            if(SUCCEEDED(props->GetValue(PKEY_Device_FriendlyName, &nameVar))){
+                                devices.emplace_back(
+                                    juce::String(nameVar.pwszVal),
+                                    juce::String(deviceId));
+
+                                PropVariantClear(&nameVar);
+                            }
+
+                            props->Release();
+                        }
+
+                        CoTaskMemFree(deviceId);
+                    }
+
+                    device->Release();
+                }
+            }
+
+            collection->Release();
+        }
+
+        enumerator->Release();
+    }
+
+    if(comOk)
+        CoUninitialize();
+
+    return devices;
 }

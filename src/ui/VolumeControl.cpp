@@ -3,10 +3,10 @@
 #include <algorithm>
 
 namespace {
-    constexpr int buttonSize = 28;
-    constexpr int labelWidth = 52;
+    constexpr int buttonWidth = 60;
+    constexpr int buttonHeight = 26;
+    constexpr int labelWidth = 68;
     constexpr int rowGap = 4;
-
     const juce::Colour accentColour{0xff6366f1};
     const juce::Colour mutedColour{0xffef4444};
 }
@@ -16,8 +16,8 @@ VolumeControl::VolumeControl(){
     volumeSlider.setRange(0.0, 100.0, 1.0);
     volumeSlider.setValue(static_cast<double>(currentVolume), juce::dontSendNotification);
     volumeSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    volumeSlider.setColour(juce::Slider::trackColourId, juce::Colour{0xff363840});
-    volumeSlider.setColour(juce::Slider::backgroundColourId, juce::Colour{0xff101418});
+    volumeSlider.setColour(juce::Slider::trackColourId, juce::Colour{0xff6366f1});
+    volumeSlider.setColour(juce::Slider::backgroundColourId, juce::Colour{0xff1e1b4b});
 
     volumeSlider.onValueChange = [this] {
         pendingVolume = static_cast<int>(volumeSlider.getValue());
@@ -118,38 +118,46 @@ void VolumeControl::timerCallback(){
         commitCallback(currentVolume);
 }
 
+void VolumeControl::setControlsEnabled(bool enabled){
+    volumeSlider.setEnabled(enabled);
+    muteButton.setEnabled(enabled);
+}
+
 void VolumeControl::resized(){
     const auto bounds = getLocalBounds().toFloat();
     const auto labelWidthF = static_cast<float>(labelWidth);
     const auto sliderW = bounds.getWidth() - labelWidthF - 8.0f;
+    const float contentHeight = 24.0f + static_cast<float>(rowGap) + static_cast<float>(buttonHeight);
+    const auto topY = bounds.getY() + (bounds.getHeight() - contentHeight) * 0.5f;
 
     volumeSlider.setBounds(
         static_cast<int>(bounds.getX()),
-        static_cast<int>(bounds.getY()),
+        static_cast<int>(topY),
         static_cast<int>(sliderW),
         24
     );
 
     volumeLabel.setBounds(
         static_cast<int>(bounds.getRight() - labelWidthF),
-        static_cast<int>(bounds.getY()),
+        static_cast<int>(topY),
         labelWidth,
         24
     );
 
     const auto centerX = bounds.getCentreX();
-    const auto buttonY = bounds.getY() + 24.0f + 4.0f;
+    const auto buttonY = topY + 24.0f + static_cast<float>(rowGap);
 
     muteButton.setBounds(
-        static_cast<int>(centerX - buttonSize * 0.5f),
+        static_cast<int>(centerX - buttonWidth * 0.5f),
         static_cast<int>(buttonY),
-        buttonSize,
-        buttonSize
+        buttonWidth,
+        buttonHeight
     );
 }
 
 void VolumeControl::paint(juce::Graphics &g){
-    g.fillAll(juce::Colour{0xff1a1d23});
+    g.setColour(juce::Colour{0xff151521});
+    g.fillRoundedRectangle(getLocalBounds().toFloat(), 10.0f);
 }
 
 void VolumeControl::setMuted(bool shouldMute){
@@ -183,7 +191,6 @@ void VolumeControl::animateToVolume(int target, int durationMs){
     }
 
     stopTimer();
-
     const auto clampedTarget = std::clamp(target, 0, 100);
 
     if(muted && clampedTarget > 0){

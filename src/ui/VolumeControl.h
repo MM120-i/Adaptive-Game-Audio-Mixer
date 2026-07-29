@@ -14,6 +14,7 @@ public:
     }
 
     void setVolume(int);
+    void setControlsEnabled(bool);
 
     int getVolume() const { 
         return currentVolume; 
@@ -32,7 +33,7 @@ private:
     void timerCallback() override;
 
     juce::Slider volumeSlider;
-    juce::TextButton muteButton{"M"};
+    juce::TextButton muteButton{"Mute"};
     juce::Label volumeLabel;
 
     int currentVolume = 65;

@@ -23,6 +23,7 @@ private:
     void initVolumeSection();
     void initSpotifySection();
     void initSessionMonitor();
+    void populateDeviceDropdown();
 
     void layoutHeader(juce::Rectangle<float> &area);
     void layoutMixerCard(const juce::Rectangle<float> &card);
@@ -44,17 +45,19 @@ private:
     juce::Label systemOutputSectionLabel;
     juce::TextButton startCaptureButton{"Start Capture"};
     juce::Label captureStatusLabel;
+    juce::ComboBox outputDeviceDropdown;
+    juce::TextButton refreshDevicesButton{"Refresh"};
+    std::vector<std::pair<juce::String, juce::String>> deviceList_;
     juce::Label deviceInfoLabel;
     juce::Label captureDetailsLabel;
 
-    LevelMeter levelMeter;
     juce::Label volumeSectionLabel;
     juce::Label nowPlayingSectionLabel;
 
     juce::TextButton spotifyConnectButton{"Connect Spotify"};
-    juce::TextButton prevButton{juce::String::fromUTF8("\xe2\x8f\xae")};
-    juce::TextButton playPauseButton{juce::String::fromUTF8("\xe2\x96\xb6")};
-    juce::TextButton nextButton{juce::String::fromUTF8("\xe2\x8f\xad")};
+    juce::TextButton prevButton{juce::String::fromUTF8("\xe2\x97\x80\xe2\x97\x80")};
+    juce::TextButton playPauseButton{juce::String::fromUTF8("\xe2\x96\xb6\xef\xb8\x8e")};
+    juce::TextButton nextButton{juce::String::fromUTF8("\xe2\x96\xb6\xe2\x96\xb6")};
     juce::Label spotifyStatusLabel;
 
     int spotifyPollCounter = 0;

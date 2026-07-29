@@ -29,9 +29,11 @@ public:
     AudioCaptureEngine();
     ~AudioCaptureEngine();
 
-    bool startCapture (juce::String &);
+    bool startCapture (juce::String &, const juce::String &deviceId = {});
     void stopCapture();
     bool isCapturing() const;
+
+    static std::vector<std::pair<juce::String, juce::String>> enumerateRenderDevices();
 
     juce::String getDeviceName() const { 
         return deviceName; 

@@ -3,11 +3,20 @@
 #include <algorithm>
 
 AudioBalancer::AudioBalancer(AudioSessionManager &mgr): sessionManager(mgr){
+    initHeader();
+    initGameSelector();
+    initCrossfader();
+    initVolumeLabels();
+}
+
+void AudioBalancer::initHeader(){
     sectionLabel.setText("Audio Mixer", juce::dontSendNotification);
     sectionLabel.setFont(juce::FontOptions{11.0f, juce::Font::bold});
     sectionLabel.setColour(juce::Label::textColourId, juce::Colour{0xff7b7d84});
     addAndMakeVisible(sectionLabel);
+}
 
+void AudioBalancer::initGameSelector(){
     gameLabel.setText("Game:", juce::dontSendNotification);
     gameLabel.setFont(juce::FontOptions{13.0f});
     gameLabel.setColour(juce::Label::textColourId, juce::Colour{0xffe4e4e7});
@@ -18,7 +27,7 @@ AudioBalancer::AudioBalancer(AudioSessionManager &mgr): sessionManager(mgr){
     gameDropdown.setColour(juce::ComboBox::outlineColourId, juce::Colour{0xff363840});
     gameDropdown.setTextWhenNothingSelected("Select game...");
     gameDropdown.setTextWhenNoChoicesAvailable("No games detected");
-    
+
     gameDropdown.onChange = [this]{
         const auto id = gameDropdown.getSelectedId();
 
@@ -31,22 +40,27 @@ AudioBalancer::AudioBalancer(AudioSessionManager &mgr): sessionManager(mgr){
         updateVolumes();
     };
 
-    gameDropdown.setEnabled(false);
+    gameDropdown.setEnabled(true);
     addAndMakeVisible(gameDropdown);
 
     refreshButton.onClick = [this]{ 
         sessionManager.refreshNow();
-        startTimer(100);
     };
     
     addAndMakeVisible(refreshButton);
+    refreshButton.setColour(juce::TextButton::buttonColourId, juce::Colour{0xff6366f1});
+    refreshButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour{0xff818cf8});
+    refreshButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    refreshButton.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
+}
 
+void AudioBalancer::initCrossfader(){
     crossFader.setSliderStyle(juce::Slider::LinearHorizontal);
     crossFader.setRange(0.0, 1.0, 0.01);
     crossFader.setValue(0.5, juce::dontSendNotification);
     crossFader.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    crossFader.setColour(juce::Slider::trackColourId, juce::Colour{0xff363840});
-    crossFader.setColour(juce::Slider::backgroundColourId, juce::Colour{0xff101418});
+    crossFader.setColour(juce::Slider::trackColourId, juce::Colour{0xff6366f1});
+    crossFader.setColour(juce::Slider::backgroundColourId, juce::Colour{0xff1e1b4b});
 
     crossFader.onValueChange = [this]{ 
         updateVolumes(); 
@@ -54,7 +68,9 @@ AudioBalancer::AudioBalancer(AudioSessionManager &mgr): sessionManager(mgr){
 
     crossFader.setEnabled(false);
     addAndMakeVisible(crossFader);
+}
 
+void AudioBalancer::initVolumeLabels(){
     musicAppLabel.setFont(juce::FontOptions{11.0f});
     musicAppLabel.setColour(juce::Label::textColourId, juce::Colour{0xff7b7d84});
     musicAppLabel.setJustificationType(juce::Justification::centred);
@@ -83,7 +99,9 @@ void AudioBalancer::refreshSessions(){
     int newSpotifyPid = 0;
 
     auto spotifyIt = std::find_if(sessions.begin(), sessions.end(),
-        [](const auto &s){ return s.processName.toLowerCase().contains("spotify"); });
+        [](const auto &s){ 
+            return s.processName.toLowerCase().contains("spotify"); 
+        });
 
     if(spotifyIt != sessions.end()){
         newSpotifyPid = spotifyIt->pid;
@@ -159,13 +177,21 @@ void AudioBalancer::updateVolumes(){
     gameVolLabel.setText(juce::String(static_cast<int>(gameVol * 100)) + "%", juce::dontSendNotification);
 }
 
-void AudioBalancer::setSystemLevel(float level){
-    levelMeter.setLevel(level);
+void AudioBalancer::clearSpotify(){
+    if(selectedGamePid > 0){
+        sessionManager.setSessionVolume(selectedGamePid, 1.0f);
+        gameVolLabel.setText("100%", juce::dontSendNotification);
+    }
+
+    spotifyPid = 0;
+    musicAppLabel.setText({}, juce::dontSendNotification);
+    musicVolLabel.setText({}, juce::dontSendNotification);
+    crossFader.setValue(1.0, juce::dontSendNotification);
+    crossFader.setEnabled(false);
 }
 
-void AudioBalancer::timerCallback(){
-    stopTimer();
-    refreshSessions();
+void AudioBalancer::setSystemLevel(float level){
+    levelMeter.setLevel(level);
 }
 
 double AudioBalancer::getCrossFaderValue() const {
