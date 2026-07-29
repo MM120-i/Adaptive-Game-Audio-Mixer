@@ -48,6 +48,10 @@ void AudioBalancer::initGameSelector(){
     };
     
     addAndMakeVisible(refreshButton);
+    refreshButton.setColour(juce::TextButton::buttonColourId, juce::Colour{0xff6366f1});
+    refreshButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour{0xff818cf8});
+    refreshButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    refreshButton.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
 }
 
 void AudioBalancer::initCrossfader(){

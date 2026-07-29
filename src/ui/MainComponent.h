@@ -55,9 +55,9 @@ private:
     juce::Label nowPlayingSectionLabel;
 
     juce::TextButton spotifyConnectButton{"Connect Spotify"};
-    juce::TextButton prevButton{juce::String::fromUTF8("\xe2\x8f\xae")};
-    juce::TextButton playPauseButton{juce::String::fromUTF8("\xe2\x96\xb6")};
-    juce::TextButton nextButton{juce::String::fromUTF8("\xe2\x8f\xad")};
+    juce::TextButton prevButton{juce::String::fromUTF8("\xe2\x97\x80\xe2\x97\x80")};
+    juce::TextButton playPauseButton{juce::String::fromUTF8("\xe2\x96\xb6\xef\xb8\x8e")};
+    juce::TextButton nextButton{juce::String::fromUTF8("\xe2\x96\xb6\xe2\x96\xb6")};
     juce::Label spotifyStatusLabel;
 
     int spotifyPollCounter = 0;

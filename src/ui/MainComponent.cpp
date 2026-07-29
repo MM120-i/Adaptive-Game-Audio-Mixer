@@ -391,8 +391,8 @@ void MainComponent::updateSpotifyUi(){
     volumeControl.setControlsEnabled(spotifyClient.isAuthenticated() && spotifyClient.hasActiveDevice());
 
     playPauseButton.setButtonText(spotifyClient.isPlaying()
-        ? juce::String::fromUTF8("\xe2\x8f\xb8")
-        : juce::String::fromUTF8("\xe2\x96\xb6"));
+        ? juce::String::fromUTF8("\xe2\x9d\x9a\xe2\x9d\x9a")
+        : juce::String::fromUTF8("\xe2\x96\xb6\xef\xb8\x8e"));
  
     switch (spotifyClient.status()){
         case SpotifyStatus::Error:

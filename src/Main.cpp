@@ -252,7 +252,7 @@ private:
         MainWindow(juce::String name, AppSettings &appSettings, const SettingsStore &store, AppLogger &appLogger) : 
             DocumentWindow(std::move(name),
             juce::Desktop::getInstance().getDefaultLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId),
-            DocumentWindow::allButtons),
+            DocumentWindow::minimiseButton | DocumentWindow::closeButton),
             settings(appSettings)
         {
 
