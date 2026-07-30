@@ -127,7 +127,11 @@ void AudioBalancer::refreshSessions(){
 
     if(selectedGamePid > 0){
         const bool stillExists = std::any_of(sessions.begin(), sessions.end(),
-            [this](const auto &s){ return s.pid == selectedGamePid; });
+            [this](const auto &s){ 
+                return s.pid == selectedGamePid
+                    && s.processName.isNotEmpty()
+                    && !s.processName.toLowerCase().contains("spotify"); 
+            });
 
         if(stillExists){
             gameDropdown.setSelectedId(selectedGamePid);
