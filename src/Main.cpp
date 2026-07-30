@@ -283,7 +283,9 @@ private:
             updateStoredWindowSize();
         }
 
-        MainComponent& getMainComponent() { return *mainComponent; }
+        MainComponent& getMainComponent() { 
+            return *mainComponent; 
+        }
 
     private:
         void updateStoredWindowSize() {
