@@ -16,14 +16,14 @@ Inspired by Xbox's Spotify "game vs music" volume slider, a feature Windows is m
 
 ## Features
 
-- **Per-app volume control** — Independent volume adjustment for any running executable via Windows Audio Session API, balanced through a crossfader interface
-- **Spotify integration** — OAuth PKCE authentication with auto-refreshing tokens, playback control (play/pause/skip), and bidirectional volume sync
-- **Global hotkeys** — 8 system-wide shortcuts using a low-level keyboard hook (`WH_KEYBOARD_LL`) that work across fullscreen games — balance, mute, play/pause, skip, and overlay toggle without leaving your game
-- **Overlay HUD** — Always-on-top transparent window showing current track, artist, and crossfader balance — click-through design doesn't steal focus from fullscreen applications
-- **Real-time audio metering** — WASAPI shared-mode loopback capture with RMS computation and dB-scaled level visualization
-- **System tray** — Minimizes to tray with right-click menu (Show, Mute, Quit)
-- **Per-device capture** — Select any active audio output device from a dropdown, refreshable for hot-plugged hardware
-- **Crash resilience** — Atomic JSON settings writes, automatic backup recovery from corrupted configs, type-validated deserialization
+- **Per-app volume control**: Independent volume adjustment for any running executable via Windows Audio Session API, balanced through a crossfader interface
+- **Spotify integration**: OAuth PKCE authentication with auto-refreshing tokens, playback control (play/pause/skip), and bidirectional volume sync
+- **Global hotkeys**: 8 system-wide shortcuts using a low-level keyboard hook (`WH_KEYBOARD_LL`) that work across fullscreen games balance, mute, play/pause, skip, and overlay toggle without leaving your game
+- **Overlay HUD**: Always-on-top transparent window showing current track, artist, and crossfader balance click through design doesn't steal focus from fullscreen applications
+- **Real-time audio metering**: WASAPI shared-mode loopback capture with RMS computation and dB-scaled level visualization
+- **System tray**: Minimizes to tray with right-click menu (Show, Mute, Quit)
+- **Per-device capture**: Select any active audio output device from a dropdown, refreshable for hot-plugged hardware
+- **Crash resilience**: Atomic JSON settings writes, automatic backup recovery from corrupted configs, type-validated deserialization
 
 ## Hotkeys
 
