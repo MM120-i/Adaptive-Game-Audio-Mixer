@@ -28,7 +28,13 @@ namespace {
             return fallback;
         }
 
-        return static_cast<bool>(object.getProperty(key));
+        auto value = object.getProperty(key);
+
+        if(value.isBool())
+            return static_cast<bool>(value);
+
+        usedDefaults = true;
+        return fallback;
     }
 
     juce::String readString(const juce::DynamicObject &object, const juce::Identifier &key, const juce::String &fallback, bool &usedDefaults){

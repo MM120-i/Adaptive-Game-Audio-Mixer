@@ -26,6 +26,7 @@ if /i "%1"=="help" (
     echo   .\build.bat lint        run static code analysis
     echo   .\build.bat clean       delete build/ directory
     echo   .\build.bat help        show this message
+    echo   .\build.bat release     build Release + create zip
     echo --------------------------------------------------
     echo   ^>^> also available:
     echo   .\test.ps1             build + verbose tests
@@ -72,6 +73,16 @@ if /i "%1"=="test" (
     echo.
     powershell -ExecutionPolicy Bypass -File test.ps1 -Config !CONFIG!
     exit /b !ERRORLEVEL!
+)
+
+if /i "%1"=="release" (
+    echo ==> Building AudioMixer ^(Release^)...
+    %CMAKE% --build build --config Release --target AudioMixer --parallel
+    if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
+    echo ==> Creating AudioMixer-Release.zip...
+    powershell -Command Compress-Archive -Path build\AudioMixer_artefacts\Release\* -DestinationPath AudioMixer-Release.zip -Force
+    echo Release package created: AudioMixer-Release.zip
+    exit /b 0
 )
 
 if "%1"=="" (

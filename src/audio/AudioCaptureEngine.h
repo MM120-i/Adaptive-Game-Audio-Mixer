@@ -29,7 +29,7 @@ public:
     AudioCaptureEngine();
     ~AudioCaptureEngine();
 
-    bool startCapture (juce::String &, const juce::String &deviceId = {});
+    bool startCapture (juce::String &, const juce::String & = {});
     void stopCapture();
     bool isCapturing() const;
 
@@ -62,4 +62,6 @@ public:
     float getCurrentLevel() const { 
         return currentLevel.load(); 
     }
+
+    std::function<void(const juce::String &)> onCaptureError;
 };

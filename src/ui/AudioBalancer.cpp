@@ -45,6 +45,11 @@ void AudioBalancer::initGameSelector(){
 
     refreshButton.onClick = [this]{ 
         sessionManager.refreshNow();
+        juce::Component::SafePointer<AudioBalancer> self(this);
+        juce::Timer::callAfterDelay(200, [self]{ 
+            if(self) 
+                self->refreshSessions(); 
+        });
     };
     
     addAndMakeVisible(refreshButton);
@@ -110,12 +115,25 @@ void AudioBalancer::refreshSessions(){
 
     gameDropdown.clear();
 
+    for(const auto &session : sessions){
+        if(session.processName.isEmpty())
+            continue;
+
+        if(session.processName.toLowerCase().contains("spotify"))
+            continue;
+
+        gameDropdown.addItem(session.processName, session.pid);
+    }
+
     if(selectedGamePid > 0){
         const bool stillExists = std::any_of(sessions.begin(), sessions.end(),
-            [this](const auto &s){ return s.pid == selectedGamePid; });
+            [this](const auto &s){ 
+                return s.pid == selectedGamePid
+                    && s.processName.isNotEmpty()
+                    && !s.processName.toLowerCase().contains("spotify"); 
+            });
 
         if(stillExists){
-            gameDropdown.addItem(selectedGameName, selectedGamePid);
             gameDropdown.setSelectedId(selectedGamePid);
         }
         else {
@@ -126,23 +144,9 @@ void AudioBalancer::refreshSessions(){
         }
     }
 
-    if(!selectedGamePid){
-        for(const auto &session : sessions){
-            if(session.processName.isEmpty())
-                continue;
-
-            if(session.processName.toLowerCase().contains("spotify"))
-                continue;
-
-            gameDropdown.addItem(session.processName, session.pid);
-        }
-    }
-
     spotifyPid = newSpotifyPid;
     const bool canBalance = (spotifyPid > 0 && selectedGamePid > 0);
     crossFader.setEnabled(canBalance);
-
-    gameDropdown.setEnabled(gameDropdown.getNumItems() > 0);
 
     if(selectedGamePid > 0){
         for(size_t i = 0; i < gameDropdown.getNumItems(); i++){

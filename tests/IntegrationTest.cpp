@@ -7,9 +7,9 @@
 #include "audio/AudioSessionManager.h"
 #include "ui/AudioBalancer.h"
 
-class Phase7Tests final : public juce::UnitTest {
+class IntegrationTests final : public juce::UnitTest {
 public:
-    Phase7Tests(): juce::UnitTest("Phase7", "Phase 7"){}
+    IntegrationTests(): juce::UnitTest("IntegrationTests", "Integration"){}
 
 #pragma warning(push)
 #pragma warning(disable: 6262)
@@ -175,4 +175,4 @@ public:
 #pragma warning(pop)
 };
 
-static Phase7Tests phase7Tests;
+static IntegrationTests integrationTests;

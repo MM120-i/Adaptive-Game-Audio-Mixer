@@ -25,11 +25,11 @@ private:
     void initSessionMonitor();
     void populateDeviceDropdown();
 
-    void layoutHeader(juce::Rectangle<float> &area);
-    void layoutMixerCard(const juce::Rectangle<float> &card);
-    void layoutVolumeCard(const juce::Rectangle<float> &card);
-    void layoutNowPlayingCard(juce::Rectangle<float> &area);
-    void layoutSystemOutputCard(juce::Rectangle<float> &area);
+    void layoutHeader(juce::Rectangle<float> &);
+    void layoutMixerCard(const juce::Rectangle<float> &);
+    void layoutVolumeCard(const juce::Rectangle<float> &);
+    void layoutNowPlayingCard(juce::Rectangle<float> &);
+    void layoutSystemOutputCard(juce::Rectangle<float> &);
 
     AppSettings &settings;
     const SettingsStore &settingsStore;
@@ -41,7 +41,6 @@ private:
     juce::Rectangle<float> systemOutputCardRect;
 
     juce::Label headerLabel;
-    juce::Label versionLabel;
     juce::Label systemOutputSectionLabel;
     juce::TextButton startCaptureButton{"Start Capture"};
     juce::Label captureStatusLabel;

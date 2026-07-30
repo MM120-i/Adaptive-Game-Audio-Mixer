@@ -298,15 +298,18 @@ private:
     };
 
     void saveSettings (const juce::String &reason) {
-        if (logger == nullptr)
+        if (!logger)
             return;
 
         auto errorMessage = juce::String();
         
-        if (settingsStore.save(settings, errorMessage))
+        if (settingsStore.save(settings, errorMessage)){
             logger->info("Settings saved during " + reason + ".");
-        else
+        }
+        else{
             logger->error("Settings save failed during " + reason + ": " + errorMessage);
+            VolumeNotification::show("Failed to save settings");
+        }
     }
 
     SettingsStore settingsStore;

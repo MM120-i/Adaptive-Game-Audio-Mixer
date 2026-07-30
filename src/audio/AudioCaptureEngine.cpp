@@ -1,12 +1,12 @@
-#include <cmath>
-
 #define WIN32_LEAN_AND_MEAN
 
+#include <cmath>
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
 #include <ksmedia.h>
 #include <functiondiscoverykeys_devpkey.h>
+#include <juce_events/juce_events.h>
 #include <combaseapi.h>
 
 #include "AudioCaptureEngine.h"
@@ -241,16 +241,23 @@ bool AudioCaptureEngine::startCapture(juce::String &errorMessage, const juce::St
                 DWORD flags = 0;
                 HRESULT r = cap->GetBuffer(&data, &frm, &flags, nullptr, nullptr);
 
-                if (r == AUDCLNT_S_BUFFER_EMPTY)
+                if(r == AUDCLNT_S_BUFFER_EMPTY)
                     break;
 
-                if (FAILED(r)){
+                if(FAILED(r)){
                     captureError = "Capture device error: " + hrDesc(r);
                     capturing.store(false, std::memory_order_relaxed);
+
+                    if(onCaptureError){
+                        juce::MessageManager::callAsync([this]{
+                            onCaptureError(captureError);
+                        });
+                    }
+
                     break;
                 }
 
-                if (flags & AUDCLNT_BUFFERFLAGS_SILENT){
+                if(flags & AUDCLNT_BUFFERFLAGS_SILENT){
                     currentLevel.store(0.0f, std::memory_order_relaxed);
                 }
                 else if(frm > 0 && data != nullptr){
@@ -316,11 +323,9 @@ bool AudioCaptureEngine::isCapturing() const {
 std::vector<std::pair<juce::String, juce::String>> AudioCaptureEngine::enumerateRenderDevices(){
     std::vector<std::pair<juce::String, juce::String>> devices;
     const bool comOk = SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
-
     IMMDeviceEnumerator *enumerator = nullptr;
 
-    if(SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
-                                  __uuidof(IMMDeviceEnumerator), (void **)&enumerator))){
+    if(SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void **)&enumerator))){
         IMMDeviceCollection *collection = nullptr;
 
         if(SUCCEEDED(enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &collection))){
@@ -347,20 +352,15 @@ std::vector<std::pair<juce::String, juce::String>> AudioCaptureEngine::enumerate
 
                                 PropVariantClear(&nameVar);
                             }
-
                             props->Release();
                         }
-
                         CoTaskMemFree(deviceId);
                     }
-
                     device->Release();
                 }
             }
-
             collection->Release();
         }
-
         enumerator->Release();
     }
 

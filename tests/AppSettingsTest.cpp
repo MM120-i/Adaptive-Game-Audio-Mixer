@@ -69,6 +69,23 @@ public:
             expect(usedDefaults == true);
             expectGreaterOrEqual(settings.windowWidth, 700);
         }
+
+        beginTest("fromJson --- non-bool values for bool fields fall back to defaults");
+        {
+            auto *obj = new juce::DynamicObject();
+            obj->setProperty("runAtStartup", juce::var("true"));
+            obj->setProperty("minimizeToTray", 1);
+            obj->setProperty("windowWidth", 800);
+            obj->setProperty("windowHeight", 600);
+
+            juce::var json(obj);
+            bool usedDefaults = false;
+            const auto settings = AppSettings::fromJson(json, usedDefaults);
+
+            expect(settings.runAtStartup == false);
+            expect(settings.minimizeToTray == true);
+            expect(usedDefaults == true);
+        }
     }
 };
 

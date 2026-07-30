@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "SpotifyClient.h"
 #include "spotify_config.h"
 
@@ -7,6 +8,8 @@
 #include <juce_core/juce_core.h>
 #include <juce_cryptography/juce_cryptography.h>
 #include <juce_events/juce_events.h>
+
+#include "ui/VolumeNotification.h"
 
 namespace {
     constexpr int CONNECTION_TIMEOUT_MS = 5000;
@@ -701,7 +704,12 @@ void SpotifyClient::setVolume(int percent){
     if(!authenticated)
         return;
 
-    apiPut("/me/player/volume?volume_percent=" + juce::String(percent));
+    auto result = apiPut("/me/player/volume?volume_percent=" + juce::String(percent));
+
+    if(result.isEmpty()){
+        VolumeNotification::show("Could not reach Spotify");
+        return;
+    }
 
     {
         const juce::ScopedLock sl(lock);
@@ -717,10 +725,17 @@ void SpotifyClient::setPlaying(bool play){
     if(!authenticated)
         return;
 
+    juce::String result;
+
     if(play)
-        apiPut("/me/player/play");
+        result = apiPut("/me/player/play");
     else
-        apiPut("/me/player/pause");
+        result = apiPut("/me/player/pause");
+
+    if(result.isEmpty()){
+        VolumeNotification::show("Could not reach Spotify");
+        return;
+    }
 
     {
         const juce::ScopedLock sl(lock);
@@ -737,7 +752,15 @@ void SpotifyClient::skipNext(){
     if(!authenticated)
         return;
 
-    apiPost("/me/player/next");
+    juce::var result;
+
+    result = apiPost("/me/player/next");
+
+    if(result.isVoid()){
+        VolumeNotification::show("Could not reach Spotify");
+        return;
+    }
+
     pollNow = true;
 
     if(onStateChanged)
@@ -747,8 +770,15 @@ void SpotifyClient::skipNext(){
 void SpotifyClient::skipPrevious(){
     if(!authenticated) 
         return;
-        
-    apiPost("/me/player/previous");
+
+    juce::var result;
+    result = apiPost("/me/player/previous");
+
+    if(result.isVoid()){
+        VolumeNotification::show("Could not reach Spotify");
+        return;
+    }
+
     pollNow = true;
 
     if(onStateChanged)

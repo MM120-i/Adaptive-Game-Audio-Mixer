@@ -5,7 +5,7 @@
 
 class VolumeControl final : public juce::Component, private juce::Timer {
 public:
-    using CommitCallback = std::function<void(int volumePercent)>;
+    using CommitCallback = std::function<void(int)>;
 
     VolumeControl();
 
