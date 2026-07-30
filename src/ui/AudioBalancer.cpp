@@ -45,8 +45,10 @@ void AudioBalancer::initGameSelector(){
 
     refreshButton.onClick = [this]{ 
         sessionManager.refreshNow();
-        juce::Timer::callAfterDelay(200, [this]{ 
-            refreshSessions(); 
+        juce::Component::SafePointer<AudioBalancer> self(this);
+        juce::Timer::callAfterDelay(200, [self]{ 
+            if(self) 
+                self->refreshSessions(); 
         });
     };
     
