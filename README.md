@@ -4,9 +4,11 @@ A Windows desktop app that dynamically blends your Spotify music with game audio
 
 ## Motivation
 
-Many video games have soundtracks I don't enjoy or want to hear. I love hard rock and obv most games don't feature hard rock, and even if they do, some of them are just bad lmao. I'd rather have my own Spotify playlist playing in the background. But manually balancing game and Spotify volume requires alt-tabbing, exiting, and that's just annoying imo.
+Many video games have soundtracks I don't enjoy or want to hear. I love hard rock and obv most games don't feature hard rock, and even if they do, some of them are just bad lmao. I'd rather have my own Spotify playlist playing in the background. But manually balancing game and Spotify volume requires alt-tabbing, exiting, and that's just annoying.
 
-So I built this app to address that. It analyzes game audio in real time and automatically ducks (lowers) Spotify volume during loud moments, then brings it back during quiet moments. The result: your music feels like it belongs in the game.
+So I built this app to address that. It must be running with Spotify and your game, in the app you can authenticate with spotify, click "Start Capture" button and select your game's .exe file from the dropdown. You can also use hotkeys during the game so you do not have to exit the game.
+
+This app can also be used for other things such as hearing a podcast while you game, hear spotify while you watch Youtube, hear spotify when you are on a discord call, etc.
 
 Inspired by Xbox's Spotify "game vs music" volume slider, a feature Windows is missing.
 
