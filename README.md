@@ -38,6 +38,10 @@ Inspired by Xbox's Spotify "game vs music" volume slider, a feature Windows is m
 | `Ctrl` + `Shift` + `H` | Toggle overlay HUD     |
 | `Ctrl` + `Shift` + `O` | Show / Hide window     |
 
+### Example
+
+![AudioMixer GUI](assets/hotkey.jpg)
+
 ## Installation
 
 Download the latest release from [Releases](../../releases), extract the `.zip`, and run `AudioMixer.exe`.
