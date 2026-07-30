@@ -45,6 +45,9 @@ void AudioBalancer::initGameSelector(){
 
     refreshButton.onClick = [this]{ 
         sessionManager.refreshNow();
+        juce::Timer::callAfterDelay(200, [this]{ 
+            refreshSessions(); 
+        });
     };
     
     addAndMakeVisible(refreshButton);
@@ -110,12 +113,21 @@ void AudioBalancer::refreshSessions(){
 
     gameDropdown.clear();
 
+    for(const auto &session : sessions){
+        if(session.processName.isEmpty())
+            continue;
+
+        if(session.processName.toLowerCase().contains("spotify"))
+            continue;
+
+        gameDropdown.addItem(session.processName, session.pid);
+    }
+
     if(selectedGamePid > 0){
         const bool stillExists = std::any_of(sessions.begin(), sessions.end(),
             [this](const auto &s){ return s.pid == selectedGamePid; });
 
         if(stillExists){
-            gameDropdown.addItem(selectedGameName, selectedGamePid);
             gameDropdown.setSelectedId(selectedGamePid);
         }
         else {
@@ -123,18 +135,6 @@ void AudioBalancer::refreshSessions(){
             selectedGamePid = 0;
             selectedGameName.clear();
             gameAppLabel.setText("", juce::dontSendNotification);
-        }
-    }
-
-    if(!selectedGamePid){
-        for(const auto &session : sessions){
-            if(session.processName.isEmpty())
-                continue;
-
-            if(session.processName.toLowerCase().contains("spotify"))
-                continue;
-
-            gameDropdown.addItem(session.processName, session.pid);
         }
     }
 

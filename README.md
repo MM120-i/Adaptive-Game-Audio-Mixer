@@ -10,32 +10,94 @@ So I built this app to address that. It analyzes game audio in real time and aut
 
 Inspired by Xbox's Spotify "game vs music" volume slider, a feature Windows is missing.
 
-## Features (MVP)
+## Screenshot
 
-- **WASAPI Loopback**: Captures system/game audio in real time
-- **DSP Analysis**: RMS, peak, transient, and silence detection
-- **Dynamic Spotify Ducking**: Lowers Spotify during loud game audio, raises it during quiet
-- **Spotify Integration**: OAuth PKCE, track metadata, volume control via Web API
-- **Global Hotkeys**: Toggle overlay, adjust volume, toggle effects without leaving your game
-- **Overlay HUD**: Always-on-top transparent window showing track info and ducking status
-- **Local Presets**: Save ducking behavior per game style (Competitive, Cinematic, etc.)
-- **Immersion Boost**: Intelligently raises music during quiet in-game moments for dramatic effect
+![AudioMixer GUI](assets/app.jpg)
+
+## Features
+
+- **Per-app volume control** — Independent volume adjustment for any running executable via Windows Audio Session API, balanced through a crossfader interface
+- **Spotify integration** — OAuth PKCE authentication with auto-refreshing tokens, playback control (play/pause/skip), and bidirectional volume sync
+- **Global hotkeys** — 7 system-wide shortcuts using a low-level keyboard hook (`WH_KEYBOARD_LL`) that work across fullscreen games — balance, mute, play/pause, skip, and overlay toggle without leaving your game
+- **Overlay HUD** — Always-on-top transparent window showing current track, artist, and crossfader balance — click-through design doesn't steal focus from fullscreen applications
+- **Real-time audio metering** — WASAPI shared-mode loopback capture with RMS computation and dB-scaled level visualization
+- **System tray** — Minimizes to tray with right-click menu (Show, Mute, Quit)
+- **Per-device capture** — Select any active audio output device from a dropdown, refreshable for hot-plugged hardware
+- **Crash resilience** — Atomic JSON settings writes, automatic backup recovery from corrupted configs, type-validated deserialization
+
+## Hotkeys
+
+| Shortcut               | Action                 |
+| ---------------------- | ---------------------- |
+| `Ctrl` + `↑`           | Balance toward Spotify |
+| `Ctrl` + `↓`           | Balance toward game    |
+| `Ctrl` + `Shift` + `M` | Mute / Unmute          |
+| `Ctrl` + `Shift` + `P` | Play / Pause           |
+| `Ctrl` + `Shift` + `→` | Next track             |
+| `Ctrl` + `Shift` + `←` | Previous track         |
+| `Ctrl` + `Shift` + `H` | Toggle overlay HUD     |
+| `Ctrl` + `Shift` + `O` | Show / Hide window     |
+
+## Installation
+
+Download the latest release from [Releases](../../releases), extract the `.zip`, and run `AudioMixer.exe`.
+
+**System requirements:**
+
+- Windows 10 or later
+- Spotify account (free or premium)
+- A default web browser (for OAuth login)
+
+## Building from source
+
+```bash
+# Clone
+git clone https://github.com/MM120-i/Adaptive-Game-Audio-Mixer.git
+cd Adaptive-Game-Audio-Mixer
+
+# Install JUCE submodule
+git submodule update --init
+
+# Set Spotify Client ID (register at developer.spotify.com)
+echo "SPOTIFY_CLIENT_ID=your_client_id_here" > .env
+
+# Build + test (Debug)
+.\build.bat test
+
+# Create release package
+.\build.bat release
+```
+
+**Build requirements:**
+
+- Visual Studio 2026 with C++20 toolchain
+- CMake 3.22+
+- Windows 10 SDK
 
 ## Tech Stack
 
-- **Language:**: C++20
-- **Framework:**: JUCE 8 (UI, audio, DSP)
-- **Audio Capture:**: WASAPI loopback (Windows)
-- **Spotify API:**: Spotify Web API (OAuth PKCE)
-- **Build:**: CMake + Visual Studio 2026
+| Layer     | Technology                                                      |
+| --------- | --------------------------------------------------------------- |
+| Language  | C++20                                                           |
+| Framework | JUCE 8 (UI, events)                                             |
+| Audio     | WASAPI loopback, `IAudioSessionManager2` COM interop            |
+| Auth      | Spotify Web API (OAuth PKCE)                                    |
+| Windowing | Win32 (`WS_EX_LAYERED`, `SetWindowsHookEx`, `Shell_NotifyIcon`) |
+| Build     | CMake + Visual Studio 2026                                      |
+| CI        | GitHub Actions (MSVC `/analyze` + cppcheck)                     |
+| Testing   | JUCE UnitTest framework — 60 tests across 8 suites              |
 
-## Building
+## Architecture
 
-```bash
-# Configure and build
-cmake -S . -B build -G "Visual Studio 18 2026" -A x64
-cmake --build build --config Debug
-
-# Run
-./build/AudioMixer_artefacts/Debug/AudioMixer.exe
 ```
+src/
+├── ui/          # JUCE Components (MainComponent, AudioBalancer, VolumeControl,
+│                  LevelMeter, OverlayHud, VolumeNotification)
+├── audio/       # WASAPI capture engine, per-app session manager
+├── core/        # Settings store, Spotify client, global hotkeys, system tray, logger
+└── Main.cpp     # Application entry point, hotkey wiring, tray setup
+```
+
+## License
+
+MIT
