@@ -6,12 +6,9 @@ CMakeUserPresets.json
 *.suo
 *.log
 *.txt
+*.zip
 
 .env
-Building
-Cleaning
-Configuring
-Launching
 Testing/
 
 # Build output artifact files
@@ -19,3 +16,4 @@ Building
 Cleaning
 Configuring
 Launching
+Creating

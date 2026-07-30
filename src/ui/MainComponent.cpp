@@ -76,12 +76,6 @@ void MainComponent::initHeader(){
     headerLabel.setColour(juce::Label::textColourId, accent);
     headerLabel.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(headerLabel);
-
-    versionLabel.setText("v" + juce::String(AUDIO_MIXER_VERSION), juce::dontSendNotification);
-    versionLabel.setFont(bodyFont());
-    versionLabel.setColour(juce::Label::textColourId, textSecondary);
-    versionLabel.setJustificationType(juce::Justification::centredRight);
-    addAndMakeVisible(versionLabel);
 }
 
 void MainComponent::initCaptureSection(){
@@ -266,8 +260,7 @@ void MainComponent::resized(){
 
 void MainComponent::layoutHeader(juce::Rectangle<float> &area){
     auto headerRow = area.removeFromTop(38.0f);
-    headerLabel.setBounds(headerRow.removeFromLeft(250.0f).toNearestInt());
-    versionLabel.setBounds(headerRow.toNearestInt());
+    headerLabel.setBounds(headerRow.toNearestInt());
 }
 
 void MainComponent::layoutMixerCard(const juce::Rectangle<float> &card){

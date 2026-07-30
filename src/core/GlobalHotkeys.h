@@ -18,8 +18,8 @@ public:
 
     bool add(UINT, UINT, Callback);
     void removeAll();
-    void fireCombo(UINT mods, UINT vk);
-    void checkHotkey(UINT vkCode);
+    void fireCombo(UINT, UINT);
+    void checkHotkey(UINT);
 
 private:
     struct Combo {

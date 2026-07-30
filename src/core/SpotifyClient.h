@@ -22,7 +22,7 @@ private:
     void exchangeCodeForTokens(const juce::String &);
     void refreshAccessToken();
 
-    juce::String httpRequest(const juce::String &, const juce::StringArray & = {}, const juce::String &method = "GET");
+    juce::String httpRequest(const juce::String &, const juce::StringArray & = {}, const juce::String & = "GET");
     juce::var httpPostForm(const juce::String &, const juce::StringPairArray &, const juce::StringArray & = {});
     juce::String apiGet(const juce::String &);
     juce::var apiPost(const juce::String &, const juce::StringPairArray & = {}, const juce::StringArray & = {});
