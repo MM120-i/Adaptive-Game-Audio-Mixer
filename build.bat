@@ -80,7 +80,12 @@ if /i "%1"=="release" (
     %CMAKE% --build build --config Release --target AudioMixer --parallel
     if !ERRORLEVEL! neq 0 exit /b !ERRORLEVEL!
     echo ==> Creating AudioMixer-Release.zip...
-    powershell -Command Compress-Archive -Path build\AudioMixer_artefacts\Release\* -DestinationPath AudioMixer-Release.zip -Force
+    if exist .release-stage rmdir /s /q .release-stage
+    mkdir .release-stage
+    xcopy /y /e /q build\AudioMixer_artefacts\Release\auth .release-stage\auth >nul
+    copy /y build\AudioMixer_artefacts\Release\AudioMixer.exe .release-stage\ >nul
+    powershell -Command Compress-Archive -Path .release-stage\* -DestinationPath AudioMixer-Release.zip -Force
+    rmdir /s /q .release-stage
     echo Release package created: AudioMixer-Release.zip
     exit /b 0
 )

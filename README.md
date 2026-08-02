@@ -46,6 +46,14 @@ Inspired by Xbox's Spotify "game vs music" volume slider, a feature Windows is m
 
 ## Installation
 
+**Windows Package Manager (WinGet):**
+
+```
+winget install MM120i.AudioMixer
+```
+
+**Manual:**
+
 Download the latest release from [Releases](../../releases), extract the `.zip`, and run `AudioMixer.exe`.
 
 **System requirements:**

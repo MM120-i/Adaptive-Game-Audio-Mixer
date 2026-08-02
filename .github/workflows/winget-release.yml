@@ -1,0 +1,19 @@
+name: Publish to WinGet
+
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: vedantmgoyal9/winget-releaser@main
+        with:
+          identifier: MM120i.AudioMixer
+          installers-regex: '\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}
